@@ -10,6 +10,7 @@
 
 ### 文档
 
+- README 补充 CHANGELOG 维护约定（`3c30221`）
 - README 增加英文摘要，新增 CHANGELOG（1.0.0）（`66fbaed`）
 
 ### 手动补充
