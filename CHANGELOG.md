@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 新增
+
+- CHANGELOG 自动生成（按提交前缀分类）与 pre-push 钩子（`9d9c9ba`）
+
 ### 文档
 
 - README 增加英文摘要，新增 CHANGELOG（1.0.0）（`66fbaed`）
