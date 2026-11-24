@@ -110,6 +110,12 @@ PORT=3321 node tools/check/extracheck.js
 
 13 个脚本合计 **787 项**，覆盖：全流程冒烟、破坏性输入、三种模式、投票与计分、跨端视图、遥控权限、拖拽与音频、界面点击路径。每次改完跑一遍，全绿再打包。
 
+## 维护
+
+- 提交信息统一用前缀：`feat:` 新增、`fix:` 修复、`docs:` 文档、`refactor:` / `perf:` 变更、`test:` 测试、`chore:` 杂项。脚本严格按前缀归类，不猜关键词。
+- `npm run changelog` 按提交记录重建 `[Unreleased]`（幂等，不会重复堆叠）。
+- `npm run hooks:install` 装 pre-push 钩子：push 前自动补 `[Unreleased]`，有变化会拦下，提交后再 push。
+
 ## 已知限制
 
 - 只面向**局域网**，没有公网部署方案；投屏和主持机建议同一台设备或同一网段。
