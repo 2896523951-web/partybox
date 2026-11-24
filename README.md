@@ -11,6 +11,25 @@
 |---|---|---|
 | ![host](docs/screenshots/02-host.png) | ![play](docs/screenshots/03-play.png) | ![remote](docs/screenshots/04-remote.png) |
 
+## English
+
+**Party Box** turns one laptop, one shared screen and everyone's phone into a party-game console for a room of people. No app install, no internet, no extra hardware.
+
+- **13 party games** — word relay, drawing, undercover/werewolf, music quiz, reaction games, dance games.
+- **Clear division of labour**: the shared screen shows what everyone should look at and never plays audio; phones only show private information (roles, words, votes); the host console is a director's desk with a cue-script prompter, transition effects and a judging bar.
+- **Zero dependencies** — plain Node.js (>=18), `node server.js` and you are up.
+- **787 automated checks** across 13 test scripts; every release is green before packaging.
+- **Two flavours of play**: phone-driven rounds, or "big-screen mode" where nobody touches a phone and the host judges who answered first.
+
+```bash
+node server.js
+# host:   http://localhost:3210/host
+# screen: http://<LAN-IP>:3210/screen
+# phones: http://<LAN-IP>:3210/play
+```
+
+License: **AGPL-3.0-or-later**. Free for personal and internal use; closing it into a product or running it as a service requires publishing the corresponding source, or buying a [commercial license](COMMERCIAL.md).
+
 ---
 
 ## 它解决什么问题
@@ -103,6 +122,7 @@ PORT=3321 node tools/check/extracheck.js
 - [十分钟上手与一晚流程](docs/quick-start.md)
 - [开箱卡（A4 可打印）](docs/quick-start-card.html)
 - [完整手册](docs/handbook.md)
+- [更新日志](CHANGELOG.md)
 
 ## 许可
 
