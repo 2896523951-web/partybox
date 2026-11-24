@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>聚会游戏机 · 十分钟开场（A4）</title>
+<style>
+  @page { size: A4 portrait; margin: 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: #111;
+    background: #fff;
+    font-family: "PingFang SC", "Microsoft YaHei", "Heiti SC", sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .sheet { width: 182mm; margin: 0 auto; padding: 4mm 0; }
+  header { border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 12px; }
+  h1 { font-size: 32px; margin: 0; letter-spacing: .02em; }
+  .sub { font-size: 13.5px; color: #555; margin-top: 4px; }
+  .steps { display: flex; gap: 8px; margin-bottom: 14px; }
+  .step {
+    flex: 1;
+    border: 1.6px solid #111;
+    border-radius: 12px;
+    padding: 14px 15px 16px;
+  }
+  .step .n {
+    display: inline-block;
+    width: 22px; height: 22px; line-height: 22px; text-align: center;
+    border-radius: 50%; background: #111; color: #fff;
+    font-size: 13px; font-weight: 700; margin-bottom: 6px;
+  }
+  .step b { display: block; font-size: 17.5px; margin-bottom: 5px; }
+  .step p { margin: 0; font-size: 14px; line-height: 1.7; color: #222; }
+  .step code { font-size: 12px; background: #f1f1f1; padding: 1px 4px; border-radius: 4px; }
+
+  h2 { font-size: 16px; margin: 22px 0 10px; letter-spacing: .08em; }
+  ul { margin: 0; padding-left: 18px; }
+  li { font-size: 14px; line-height: 1.85; margin-bottom: 5px; }
+  .two { display: flex; gap: 18px; }
+  .two > div { flex: 1; }
+  .warn li::marker { content: "✕  "; color: #b42318; font-weight: 700; }
+  .ok li::marker { content: "·  "; }
+  footer {
+    margin-top: 26px; border-top: 1px dashed #bbb; padding-top: 8px;
+    font-size: 12.5px; color: #555; display: flex; justify-content: space-between;
+  }
+  table.flow { width: 100%; border-collapse: collapse; }
+  table.flow th {
+    width: 42mm; text-align: left; font-size: 13px; color: #111;
+    border: 1px solid #111; padding: 9px 10px; background: #f4f4f4;
+  }
+  table.flow td { border: 1px solid #111; padding: 9px 12px; font-size: 13.5px; line-height: 1.6; }
+  .tip { font-size: 14px; color: #333; margin-top: 14px; line-height: 1.7; }
+  @media print { .sheet { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header>
+    <h1>聚会游戏机 · 十分钟开场</h1>
+    <div class="sub">第一次用看这一页就够。细节翻《操作手册》。</div>
+  </header>
+
+  <div class="steps">
+    <div class="step">
+      <span class="n">1</span>
+      <b>起服务</b>
+      <p>插电，双击 <code>start.bat</code>。<br />等黑窗口里出现一行<br /><code>http://192.168.x.x:3210</code></p>
+    </div>
+    <div class="step">
+      <span class="n">2</span>
+      <b>投屏</b>
+      <p>投屏电脑打开<br /><code>…:3210/screen</code><br />按 F11 全屏。</p>
+    </div>
+    <div class="step">
+      <span class="n">3</span>
+      <b>扫码</b>
+      <p>大家扫投屏上的二维码<br />进 <code>/play</code>，戴上耳机。<br />主持台点「选游戏」开局。</p>
+    </div>
+  </div>
+
+  <div class="two">
+    <div>
+      <h2>卡住了先看这里</h2>
+      <ul class="ok">
+        <li><b>扫不开</b>：手机和电脑不在同一个 Wi-Fi。</li>
+        <li><b>Windows 弹防火墙</b>：点「允许」，尤其「专用网络」。</li>
+        <li><b>投屏没声音</b>：正常。声音只从主持台那台电脑出，接 HDMI 或 3.5mm，别用蓝牙。</li>
+        <li><b>页面打不开</b>：黑窗口被关了。重新双击 <code>start.bat</code>。</li>
+      </ul>
+    </div>
+    <div>
+      <h2>第一次别做这四件</h2>
+      <ul class="warn">
+        <li>别一上来玩狼人杀（规则重，主持人会乱）。</li>
+        <li>别开「自动推进」（还不知道它会替你点什么）。</li>
+        <li>别开两个投屏窗口（画面会互相抢）。</li>
+        <li>别把主持台地址念给全场（带密钥）。要帮忙推进，用「⋯ → 手机遥控」的 6 位码。</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>开演前 90 秒自检</h2>
+  <ul class="ok">
+    <li>投屏上有二维码，下面是 <code>…/play</code></li>
+    <li>手机输名字能进，投屏显示「已加入 N 人」，人数对得上</li>
+    <li>点一次「启用声音」，听到提示音</li>
+    <li>顶栏「开场体检」全绿</li>
+  </ul>
+
+  <h2>今晚怎么排（照抄这两行就行）</h2>
+  <table class="flow">
+    <tr>
+      <th>6–8 人 / 2 小时</th>
+      <td>报数抢答 → 谁是卧底 → 惩罚 → 传声筒 → 你们认了吗</td>
+    </tr>
+    <tr>
+      <th>8–12 人 / 3 小时</th>
+      <td>报数抢答 → 你画我猜 → 惩罚 → 舞蹈狼人杀 → 笨蛋杀手 → 收尾</td>
+    </tr>
+  </table>
+  <div class="tip">一晚 <b>3–4 个游戏</b>就够：热身 → 主游戏 → 惩罚 → 主游戏 → 收尾。收尾一定要轻——结束时的情绪会被记住整晚。</div>
+
+  <footer>
+    <span>聚会游戏机 · 开箱卡</span>
+    <span>主持台 …:3210/host　投屏 …:3210/screen　玩家 …:3210/play</span>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>遥控 · 聚会游戏机</title>
+<link rel="icon" href="data:," />
+<style>
+  :root {
+    --bg: #0b0d13;
+    --card: #14171f;
+    --line: #262b38;
+    --text: #eef1f7;
+    --dim: #8b90a6;
+    --teal: #4fd1c5;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    padding: 14px 14px calc(20px + env(safe-area-inset-bottom));
+  }
+  .gate { display: flex; flex-direction: column; gap: 14px; max-width: 420px; margin: 12vh auto 0; }
+  .gate h1 { font-size: 20px; margin: 0; }
+  .gate p { color: var(--dim); font-size: 13px; line-height: 1.6; margin: 0; }
+  .code-in {
+    width: 100%; padding: 16px; font-size: 30px; letter-spacing: .34em; text-align: center;
+    background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .btn {
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+    border-radius: 12px; padding: 14px 10px; font-size: 15px; font-weight: 700;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn.primary { background: var(--teal); color: #06231f; border-color: var(--teal); }
+  .btn.ghost { background: transparent; color: var(--dim); }
+  header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+  header b { font-size: 15px; }
+  header span { font-size: 12px; color: var(--dim); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .step { font-size: 12px; color: var(--teal); letter-spacing: .06em; }
+  .cue { font-size: 26px; font-weight: 900; margin: 4px 0 6px; }
+  .say { font-size: 17px; line-height: 1.55; color: var(--text); margin-bottom: 4px; }
+  .next { font-size: 12px; color: var(--dim); margin-bottom: 14px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .row.two { grid-template-columns: 1fr 1fr; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+  .grid4 .btn { padding: 12px 4px; font-size: 13px; font-weight: 600; }
+  .bigtext { display: flex; gap: 8px; margin: 10px 0 4px; }
+  .bigtext input {
+    flex: 1; min-width: 0; padding: 12px; font-size: 14px; border-radius: 12px;
+    background: var(--card); color: var(--text); border: 1px solid var(--line); font-family: inherit;
+  }
+  .votepill {
+    display: inline-flex; align-items: center; gap: 8px; margin: 8px 0 2px;
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line);
+    font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  .votepill.over { color: #ff9b8a; border-color: rgba(255, 122, 107, .4); }
+  .sec-t { font-size: 11px; letter-spacing: .18em; color: var(--dim); margin: 16px 0 6px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: #20242f; color: var(--text); border: 1px solid var(--line);
+    padding: 9px 14px; border-radius: 999px; font-size: 13px; opacity: 0;
+    transition: opacity .18s; pointer-events: none; max-width: 90vw;
+  }
+  .toast.on { opacity: 1; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <h1>手机遥控</h1>
+  <p>在主持台顶栏「⋯ → 手机遥控」里看 6 位码。这个码只用来推进流程，换游戏、清人都做不了。</p>
+  <input class="code-in" id="codeIn" inputmode="numeric" maxlength="6" placeholder="000000" />
+  <button class="btn primary" id="goBtn">连上</button>
+  <p style="font-size:12px" id="gateMsg"></p>
+</div>
+
+<div id="pad" class="hide">
+  <header>
+    <b id="gameName">—</b>
+    <span id="clock"></span>
+  </header>
+  <div class="step" id="step"></div>
+  <div class="cue" id="cue"></div>
+  <div class="say" id="say"></div>
+  <div class="next" id="next"></div>
+  <div class="votepill hide" id="votePill"><span>投票</span><b id="voteLeft">1:00</b></div>
+
+  <div class="row">
+    <button class="btn primary" data-cmd="cue/next">完成</button>
+    <button class="btn" data-cmd="cue/skip">跳过</button>
+    <button class="btn" data-cmd="cue/again">再说一遍</button>
+  </div>
+
+  <div class="sec-t">仪式</div>
+  <div class="grid4">
+    <button class="btn" data-fx="hush">静场</button>
+    <button class="btn" data-fx="countdown">倒计时</button>
+    <button class="btn" data-fx="deal">发身份</button>
+    <button class="btn" data-fx="reveal">揭晓</button>
+  </div>
+  <div class="bigtext">
+    <input id="bigIn" maxlength="20" placeholder="推一句大字…" />
+    <button class="btn" id="bigBtn">推上屏</button>
+  </div>
+
+  <div id="gameSec" class="hide">
+    <div class="sec-t">这一局</div>
+    <div class="row two" id="gameBtns"></div>
+    <div class="row two">
+      <button class="btn ghost" data-cmd="show/next">节目单下一项</button>
+      <button class="btn ghost" id="logout">断开</button>
+    </div>
+  </div>
+  <div id="noGame" class="sec-t">还没选游戏：先用上面的完成 / 跳过推流程</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let code = new URLSearchParams(location.search).get('code') || localStorage.getItem('pb_remote') || '';
+  let timer = null;
+  let voteTimer = null;
+
+  function toast(t) {
+    const el = $('toast');
+    el.textContent = t;
+    el.classList.add('on');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('on'), 1800);
+  }
+
+  async function call(cmd, extra) {
+    const r = await fetch('/api/remote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ code, cmd }, extra || {})),
+    })
+      .then((x) => x.json())
+      .catch(() => null);
+    if (!r) return toast('网络断了');
+    if (r.error) return toast(r.error);
+    if (r.say && cmd === 'cue/again') toast(r.cue + '：' + r.say);
+    load();
+  }
+
+  function paintVote(v) {
+    const el = $('votePill');
+    clearInterval(voteTimer);
+    if (!v || !v.dueAt) {
+      el.classList.add('hide');
+      return;
+    }
+    el.classList.remove('hide');
+    const tick = () => {
+      const left = Math.max(0, v.dueAt - Date.now());
+      if (v.expired || left <= 0) {
+        el.classList.add('over');
+        $('voteLeft').textContent = '超时';
+        clearInterval(voteTimer);
+        return;
+      }
+      el.classList.remove('over');
+      const s = Math.ceil(left / 1000);
+      $('voteLeft').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    };
+    tick();
+    voteTimer = setInterval(tick, 500);
+  }
+
+  function paint(d) {
+    $('gate').classList.add('hide');
+    $('pad').classList.remove('hide');
+    $('gameName').textContent = d.gameName || '还没选游戏';
+    const c = d.cue || {};
+    $('step').textContent = c.total ? `第 ${c.index + 1} / ${c.total} 步` : '';
+    $('cue').textContent = c.cue || '';
+    $('say').textContent = c.say || '';
+    $('next').textContent = c.next ? '下一步：' + c.next : '';
+    paintVote(d.vote);
+
+    const has = (d.controls || []).length > 0;
+    $('gameSec').classList.toggle('hide', !has && !d.gameName);
+    $('noGame').classList.toggle('hide', !!has);
+    const box = $('gameBtns');
+    box.innerHTML = '';
+    for (const b of d.controls || []) {
+      const el = document.createElement('button');
+      el.className = 'btn';
+      el.textContent = b.label;
+      el.onclick = () => call('game/act', { action: b.action });
+      box.appendChild(el);
+    }
+  }
+
+  async function load() {
+    if (!code) return;
+    const r = await fetch('/api/remote?code=' + encodeURIComponent(code))
+      .then((x) => x.json())
+      .catch(() => null);
+    if (!r || r.error) {
+      $('gate').classList.remove('hide');
+      $('pad').classList.add('hide');
+      $('gateMsg').textContent = r && r.error ? r.error : '连不上，检查是不是同一个 Wi-Fi';
+      localStorage.removeItem('pb_remote');
+      code = '';
+      clearInterval(timer);
+      return;
+    }
+    paint(r);
+  }
+
+  $('goBtn').onclick = () => {
+    const v = $('codeIn').value.replace(/\D/g, '');
+    if (v.length !== 6) return ($('gateMsg').textContent = '六位数字');
+    code = v;
+    localStorage.setItem('pb_remote', code);
+    load();
+    clearInterval(timer);
+    timer = setInterval(load, 1500);
+  };
+
+  document.querySelectorAll('[data-cmd]').forEach((b) => {
+    b.onclick = () => call(b.dataset.cmd);
+  });
+  document.querySelectorAll('[data-fx]').forEach((b) => {
+    b.onclick = () => call('fx/fire', { name: b.dataset.fx });
+  });
+  $('bigBtn').onclick = () => {
+    const t = $('bigIn').value.trim();
+    if (!t) return toast('先写一句');
+    call('fx/fire', { name: 'bigtext', arg: t });
+    $('bigIn').value = '';
+  };
+  $('bigIn').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('bigBtn').click();
+  });
+  $('logout').onclick = () => {
+    localStorage.removeItem('pb_remote');
+    code = '';
+    clearInterval(timer);
+    $('pad').classList.add('hide');
+    $('gate').classList.remove('hide');
+  };
+
+  if (code) {
+    load();
+    timer = setInterval(load, 1500);
+  }
+})();
+</script>
+</body>
+</html>

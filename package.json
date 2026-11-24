@@ -1,0 +1,15 @@
+{
+  "name": "party-box",
+  "version": "1.0.0",
+  "private": false,
+  "description": "局域网多人聚会游戏机：13 个派对游戏，手机当控制器，大屏当主画面，零依赖",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node tools/check/check.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "AGPL-3.0-or-later"
+}

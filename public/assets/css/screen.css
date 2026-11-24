@@ -1,0 +1,730 @@
+body.screen {
+  height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 70% at 50% 0%, var(--stage-glow) 0%, transparent 62%),
+    var(--stage-bg);
+  display: flex;
+  flex-direction: column;
+  cursor: none;
+}
+
+.sc-top {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 26px 40px 0;
+}
+.sc-top .name {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: var(--text);
+}
+.sc-top .round {
+  font-size: 15px;
+  color: var(--dim2);
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+.sc-top .spacer { flex: 1; }
+.sc-top .clock {
+  font-size: 34px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--teal);
+  letter-spacing: .02em;
+}
+
+.sc-main {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6vw;
+  min-height: 0;
+}
+
+.sc-podium { text-align: center; }
+.sc-big {
+  font-size: clamp(72px, 13vw, 200px);
+  font-weight: 900;
+  line-height: .95;
+  letter-spacing: -.03em;
+  background: linear-gradient(180deg, var(--title1), var(--title2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.sc-big.small { font-size: clamp(56px, 9vw, 140px); }
+.sc-sub {
+  margin-top: 22px;
+  font-size: clamp(20px, 2.4vw, 34px);
+  color: var(--dim);
+  font-weight: 600;
+}
+.sc-hint {
+  margin-top: 14px;
+  font-size: clamp(16px, 1.6vw, 24px);
+  color: var(--amber);
+  letter-spacing: .12em;
+}
+.sc-empty { color: var(--dim2); font-size: 24px; }
+
+/* 条形榜 */
+.sc-bars {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 20px);
+}
+.sc-bar {
+  display: grid;
+  grid-template-columns: minmax(120px, 22%) 1fr 64px;
+  align-items: center;
+  gap: 20px;
+}
+.sc-bar-label {
+  font-size: clamp(18px, 2vw, 30px);
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-bar-track {
+  height: clamp(18px, 2.6vh, 34px);
+  background: var(--card);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.sc-bar-track > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  /* 单一颜色 + 半透明，不写死渐变：换到过年皮肤要跟着变 */
+  background: var(--teal);
+  opacity: .85;
+  transition: width .5s cubic-bezier(.2, .8, .2, 1);
+}
+.sc-bar:nth-child(1) .sc-bar-track > i { background: var(--amber); }
+.sc-bar-num {
+  font-size: clamp(20px, 2.2vw, 34px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-align: right;
+}
+
+/* 底部比分 */
+.sc-foot {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 40px 26px;
+}
+.team {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--line);
+}
+.team .tn { font-size: 15px; color: var(--dim); font-weight: 700; }
+.team .tv {
+  font-size: 40px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.team.A .tv { color: #7fd4ff; }
+.team.B .tv { color: #ffb27f; }
+.team.lead { border-color: rgba(var(--teal-rgb), .35); background: rgba(var(--teal-rgb), .06); }
+.sc-foot .spacer { flex: 1; }
+
+.sc-bar-line {
+  height: 5px;
+  background: var(--card);
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 0 40px 18px;
+}
+.sc-bar-line > i {
+  display: block;
+  height: 100%;
+  background: var(--teal);
+  transition: width .3s linear;
+}
+
+/* 大厅层 */
+#lobby {
+  position: fixed;
+  inset: 0;
+  background: var(--stage-bg);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+#lobby.on { display: flex; }
+#lobby h1 {
+  font-size: clamp(34px, 4vw, 62px);
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+#lobby .sub { color: var(--dim); font-size: clamp(16px, 1.6vw, 22px); }
+#lobby .qrbox svg {
+  width: clamp(180px, 22vw, 300px);
+  height: clamp(180px, 22vw, 300px);
+  background: #fff;
+  padding: 12px;
+  border-radius: 16px;
+}
+/* 扫码下面那行网名。做成一颗胶囊，是因为远看要能一眼认出「这是网名不是标题」；
+   颜色走 --teal-rgb，过年皮肤自动变金色。 */
+#lobby .wifi {
+  font-size: clamp(15px, 1.5vw, 22px);
+  font-weight: 800;
+  color: var(--teal);
+  letter-spacing: .04em;
+  padding: 7px 26px;
+  border: 1px solid rgba(var(--teal-rgb), .38);
+  background: rgba(var(--teal-rgb), .08);
+  border-radius: 999px;
+  max-width: 86vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#lobby .wifi.muted {
+  color: var(--dim);
+  font-weight: 600;
+  border-color: transparent;
+  background: none;
+}
+#lobby .wifi:empty { display: none; }
+#lobby .cnt { font-size: 18px; color: var(--teal); font-weight: 700; letter-spacing: .1em; }
+
+.sc-off {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: #6b4a12;
+  background: #2a2008;
+  padding: 6px 16px;
+  border-radius: 999px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.sc-off.on { opacity: 1; }
+
+/* ---------------------------------------------------------- 全屏入口
+   投屏那台机器多半没有键盘，靠遥控或鼠标点。低透明度，不抢画面。 */
+
+.fsbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .04);
+  color: var(--dim);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  opacity: .5;
+  transition: opacity .15s, color .15s, border-color .15s;
+}
+.fsbtn:hover {
+  opacity: 1;
+  color: var(--teal);
+  border-color: rgba(var(--teal-rgb), .45);
+}
+.fsbtn.on { color: var(--teal); border-color: rgba(var(--teal-rgb), .4); }
+.fsbtn svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+/* ------------------------------------------------------------ 规则卡
+   选完游戏先上这张：3 条规则 + 一句口号 + 一个二维码。
+   站在三米外看，所以字号都在 19px 以上；一条超过 20 个字就念不下来，
+   规则文本本身在 games/<id>/index.js 里控制长度（check.js 会拦）。 */
+
+.sc-rules {
+  width: 100%;
+  max-width: 1240px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(170px, 18vw, 240px);
+  grid-template-areas:
+    "head foot"
+    "steps foot";
+  align-content: center;
+  column-gap: clamp(24px, 4vw, 60px);
+  row-gap: clamp(16px, 2.4vh, 30px);
+}
+.sc-rules-head { grid-area: head; }
+.sc-kicker {
+  font-size: clamp(12px, 1.05vw, 16px);
+  font-weight: 800;
+  letter-spacing: .32em;
+  color: var(--dim2);
+  margin-bottom: .55em;
+}
+.sc-rtitle {
+  font-size: clamp(44px, 6.4vw, 104px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.02em;
+  background: linear-gradient(180deg, var(--title1), var(--title2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.sc-slogan {
+  margin-top: clamp(10px, 1.4vh, 18px);
+  font-size: clamp(18px, 1.9vw, 30px);
+  font-weight: 700;
+  color: var(--teal);
+  letter-spacing: .01em;
+}
+.sc-steps {
+  grid-area: steps;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.5vh, 18px);
+  max-width: 920px;
+}
+.sc-step {
+  display: flex;
+  gap: clamp(12px, 1.4vw, 22px);
+  align-items: flex-start;
+}
+.sc-step-n {
+  flex: 0 0 auto;
+  width: clamp(30px, 2.8vw, 44px);
+  height: clamp(30px, 2.8vw, 44px);
+  border-radius: 999px;
+  background: rgba(var(--teal-rgb), .1);
+  border: 1px solid rgba(var(--teal-rgb), .3);
+  color: var(--teal);
+  font-size: clamp(14px, 1.3vw, 20px);
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: .12em;
+}
+.sc-step-t {
+  font-size: clamp(19px, 2.05vw, 34px);
+  font-weight: 650;
+  line-height: 1.42;
+  color: var(--text);
+}
+.sc-rules-foot {
+  grid-area: foot;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.sc-qr svg {
+  display: block;
+  width: clamp(140px, 15vw, 210px);
+  height: clamp(140px, 15vw, 210px);
+  background: #fff;
+  padding: 10px;
+  border-radius: 16px;
+}
+.sc-qr:empty { display: none; }
+.sc-join { text-align: center; }
+.sc-join-n {
+  font-size: clamp(15px, 1.5vw, 20px);
+  font-weight: 800;
+  color: var(--teal);
+  letter-spacing: .06em;
+}
+.sc-join-t {
+  margin-top: 4px;
+  font-size: clamp(11px, 1vw, 14px);
+  color: var(--dim2);
+  letter-spacing: .1em;
+}
+/* 规则卡上的网名：空间窄，一行截断，宁可少几个字也不要撑破卡片 */
+.sc-join-w {
+  margin-top: 5px;
+  font-size: clamp(11px, 1.05vw, 14px);
+  font-weight: 700;
+  color: var(--teal);
+  letter-spacing: .02em;
+  max-width: 230px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-join-w:empty { display: none; }
+
+/* ------------------------------------------------------ 本局结算（O5）
+   一局结束打上投屏的那一页。名次、名字、分数三列，一条一行。
+   第一名的底纹用 inset 描边而不是半透明填充 —— 填充色是硬编码的，
+   换到过年皮肤就不对了。 */
+.sc-settle {
+  width: 100%;
+  max-width: 1080px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, .7vh, 9px);
+  /* 给底部的下注条留位置：不留的话它会压住最后一行 */
+  padding-bottom: 10px;
+}
+.sc-stitle {
+  font-size: clamp(28px, 3.6vw, 58px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -.02em;
+  margin-bottom: clamp(4px, .8vh, 12px);
+  background: linear-gradient(180deg, var(--title1), var(--title2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.sc-srow {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.4vw, 22px);
+  padding: clamp(5px, .8vh, 11px) clamp(12px, 1.4vw, 20px);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .035);
+  animation: scRowIn .34s ease-out both;
+}
+.sc-srow.top {
+  background: rgba(255, 255, 255, .07);
+  box-shadow: inset 0 0 0 1.5px var(--teal);
+}
+.sc-srank {
+  flex: 0 0 auto;
+  width: clamp(30px, 3vw, 46px);
+  text-align: right;
+  font-size: clamp(18px, 2vw, 30px);
+  font-weight: 800;
+  color: var(--dim2);
+  font-variant-numeric: tabular-nums;
+}
+.sc-srow.top .sc-srank { color: var(--teal); }
+.sc-sname {
+  flex: 1;
+  min-width: 0;
+  font-size: clamp(19px, 2.2vw, 33px);
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-snum {
+  font-size: clamp(20px, 2.3vw, 36px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--teal);
+}
+
+@keyframes scRowIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------------------------------------------------- 收工总榜（O9）
+   称号比分数更容易被记住，所以摆在名字正下面一行。 */
+.sc-board {
+  width: 100%;
+  max-width: 1120px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, .55vh, 8px);
+  padding-bottom: 10px;
+}
+.sc-brow {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.3vw, 20px);
+  padding: clamp(4px, .62vh, 9px) clamp(12px, 1.4vw, 20px);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .035);
+  animation: scRowIn .34s ease-out both;
+}
+.sc-brow.top { background: rgba(255, 255, 255, .07); box-shadow: inset 0 0 0 1.5px var(--teal); }
+.sc-brank {
+  flex: 0 0 auto;
+  width: clamp(28px, 2.8vw, 44px);
+  text-align: right;
+  font-size: clamp(17px, 1.9vw, 28px);
+  font-weight: 800;
+  color: var(--dim2);
+  font-variant-numeric: tabular-nums;
+}
+.sc-brow.top .sc-brank { color: var(--teal); }
+.sc-bmid { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sc-bname {
+  font-size: clamp(16px, 1.9vw, 27px);
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-bgot {
+  font-size: clamp(10px, .93vw, 14px);
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: .06em;
+  margin-top: 2px;
+}
+.sc-bright { display: flex; flex-direction: column; align-items: flex-end; }
+.sc-bnum {
+  font-size: clamp(18px, 2.05vw, 31px);
+  font-weight: 900;
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.sc-bsub {
+  font-size: clamp(9px, .82vw, 11.5px);
+  color: var(--dim2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------- 围观下注条（O1）
+   压在画面底部一行。只报人数和结果 —— 谁押了谁是秘密，
+   写出来就没人敢押了。 */
+.sc-bet {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(4px, 1vh, 14px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: rgba(8, 9, 13, .82);
+  border: 1px solid var(--line2);
+  backdrop-filter: blur(6px);
+  animation: scRowIn .3s ease-out both;
+}
+.sc-bet-t { font-size: clamp(13px, 1.1vw, 17px); font-weight: 800; color: var(--teal); }
+.sc-bet-s { font-size: clamp(11px, .95vw, 14px); color: var(--dim); }
+
+/* ------------------------------------------------ 空档表情（O4）
+   手机点一下，投屏从底下飘上去。层本身不接鼠标，
+   免得把投屏的「双击全屏」挡住。 */
+.sc-floatlayer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;
+}
+.sc-float {
+  position: absolute;
+  bottom: 6%;
+  animation: scFloat 3.2s ease-out forwards;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .5));
+}
+@keyframes scFloat {
+  0% { transform: translateY(0) scale(.7); opacity: 0; }
+  14% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateY(-46vh) scale(1.15); opacity: 0; }
+}
+
+/* ------------------------------------------------ 仪式动作（H3）
+   一层全屏盖板：动作只改这一层，撤掉之后下面那一屏原样还在。
+   投屏不发声，声音从主持台那台电脑出。 */
+.fxlayer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: rgba(4, 6, 10, .9);
+}
+.fxlayer.on { display: flex; animation: fxIn .18s ease-out; }
+.fxlayer.fx-hush { background: #000; }
+
+.fx-box { text-align: center; padding: 0 6vw; }
+.fx-box b { display: block; font-size: clamp(40px, 7vw, 96px); font-weight: 900; letter-spacing: .02em; color: #fff; }
+.fx-box span { display: block; margin-top: 16px; font-size: clamp(14px, 1.7vw, 24px); color: rgba(255, 255, 255, .62); }
+
+/* 宣布死亡：压黑，只留一行小字 —— 这一屏越安静越有分量 */
+.fx-dead b { font-size: clamp(22px, 2.6vw, 38px); font-weight: 600; color: #ff7b6b; letter-spacing: .08em; }
+
+/* 倒计时 */
+.fx-box.fx-num { font-size: clamp(120px, 22vw, 320px); font-weight: 900; color: #fff; line-height: 1; animation: fxPop .85s ease-out; }
+.fx-box.fx-num.go { font-size: clamp(60px, 9vw, 140px); letter-spacing: .1em; }
+
+/* 推大字：主持人临时写的一句话 */
+.fx-box.fx-big { font-size: clamp(34px, 5.6vw, 84px); font-weight: 800; color: #fff; line-height: 1.3; }
+
+/* 揭晓：卡片翻一下再出来 */
+.fx-flip { animation: fxFlip .85s cubic-bezier(.2, .8, .2, 1); }
+
+@keyframes fxIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes fxPop { 0% { transform: scale(.55); opacity: 0 } 55% { transform: scale(1.06) } 100% { transform: scale(1); opacity: 1 } }
+@keyframes fxFlip {
+  0% { transform: perspective(900px) rotateY(78deg); opacity: 0 }
+  70% { transform: perspective(900px) rotateY(-6deg); opacity: 1 }
+  100% { transform: perspective(900px) rotateY(0); opacity: 1 }
+}
+
+
+/* 综艺模式（7.1）：底部两队比分收起，只留一句提示。
+   分照常算，切回比赛模式立刻回来。 */
+body.variety .sc-foot .team { display: none; }
+
+
+/* ------------------------------------------------ S1 转场
+   换游戏时的呼吸感：全屏一层，中间大号游戏名，0.45 秒淡出。 */
+.sc-trans {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 6, 10, .82);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease-out;
+}
+.sc-trans.on { opacity: 1; }
+.sc-trans b {
+  font-size: clamp(34px, 6vw, 76px);
+  font-weight: 900;
+  letter-spacing: .02em;
+  color: #fff;
+  transform: scale(.96);
+  transition: transform .3s cubic-bezier(.2, .8, .2, 1);
+}
+.sc-trans.on b { transform: scale(1); }
+
+
+/* S4 投票倒计时：右下角一颗胶囊，最后 10 秒变红 */
+.sc-vote {
+  position: fixed;
+  right: 28px;
+  bottom: 78px;
+  z-index: 60;
+  display: none;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .14);
+  color: #fff;
+}
+.sc-vote.on { display: inline-flex; }
+.sc-vote span { font-size: 12px; letter-spacing: .16em; opacity: .6; }
+.sc-vote b { font-size: 24px; font-variant-numeric: tabular-nums; font-weight: 800; }
+.sc-vote.over { border-color: rgba(255, 122, 107, .5); color: #ff8f80; }
+
+
+/* S2 逐条揭晓：一行行往下长，最新一条高亮。 */
+.sc-reveal { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 80vw; }
+.sc-reveal-t {
+  font-size: 13px;
+  letter-spacing: .22em;
+  color: rgba(255, 255, 255, .5);
+}
+.sc-reveal-list { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.sc-reveal-row {
+  padding: 10px 22px;
+  border-radius: 12px;
+  font-size: clamp(18px, 2.4vw, 34px);
+  font-weight: 700;
+  color: rgba(255, 255, 255, .72);
+  background: rgba(255, 255, 255, .05);
+  animation: scRevealIn .26s ease-out both;
+}
+.sc-reveal-row.now {
+  color: #fff;
+  background: rgba(var(--teal-rgb, 79, 209, 197), .16);
+  border: 1px solid rgba(var(--teal-rgb, 79, 209, 197), .45);
+}
+@keyframes scRevealIn { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+
+
+/* 惩罚卡：一张竖排卡片，标题大字、正文一行 */
+.sc-card {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(.94);
+  z-index: 90; /* 必须压过大厅二维码（它自己也有层级） */
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  min-width: min(520px, 78vw);
+  padding: 34px 44px;
+  border-radius: 22px;
+  background: #121620;
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, .55);
+  text-align: center;
+  opacity: 0;
+  transition: opacity .2s, transform .28s cubic-bezier(.2, .8, .2, 1);
+}
+.sc-card.on { display: flex; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.sc-card b { font-size: clamp(30px, 4vw, 52px); font-weight: 900; color: #fff; }
+.sc-card span { font-size: clamp(15px, 1.8vw, 22px); color: rgba(255, 255, 255, .68); line-height: 1.55; }
+
+
+/* 惩罚卡的背板：卡片之外压暗，让视线落在卡上 */
+.sc-card-mask {
+  position: fixed; inset: 0; z-index: 85;
+  background: rgba(4, 6, 10, .58);
+  display: none;
+}
+.sc-card-mask.on { display: block; }
+
+
+/* 综艺结算：名场面在前，名字一排在后，分数不上屏 */
+.sc-moments { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 14px; align-items: center; }
+.sc-moment-line {
+  font-size: clamp(18px, 2.2vw, 30px);
+  font-weight: 700;
+  color: #fff;
+  opacity: .92;
+}
+.sc-vnames { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.sc-vname {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: clamp(14px, 1.6vw, 20px);
+  color: rgba(255, 255, 255, .78);
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .12);
+}
+
+
+/* 1：规则卡上的「需要几人」 */
+.sc-need { font-size: 13.5px; color: #ffd479; margin-top: 6px; letter-spacing: .02em; }
+
+/* 11：柱状图抬头（投票题目） */
+.sc-bars-head { text-align: center; margin-bottom: 14px; }
+.sc-bars-title { font-size: clamp(24px, 3.2vw, 44px); font-weight: 900; color: #fff; }
+.sc-bars-sub { font-size: clamp(13px, 1.5vw, 18px); color: rgba(255, 255, 255, .6); margin-top: 4px; }

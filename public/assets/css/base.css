@@ -1,0 +1,177 @@
+:root {
+  --bg: #08090d;
+  --bg2: #0d0f16;
+  --card: #12141d;
+  --card2: #171a25;
+  --line: #1f2331;
+  --line2: #2a2f42;
+  --text: #e8eaf2;
+  --dim: #8b90a6;
+  --teal: #35e0d0;
+  /* 主色的 RGB 三元组：所有半透明主色都走 rgba(var(--teal-rgb), α)，
+     这样换皮肤只改这一个值，不用回头改三十处 rgba。 */
+  --teal-rgb: 53, 224, 208;
+  --purple: #a855f7;
+  --amber: #f5b942;
+  --red: #ef5b5b;
+  --green: #3ddc84;
+  --r: 14px;
+  /* 主色单独抽出来：过年皮肤只换这一组，不用去改每个按钮 */
+  --prim1: #2fd9c9;
+  --prim2: #1eb3a6;
+  --prim-fg: #05201d;
+  --title1: #ffffff;
+  --title2: #9fb6c9;
+  /* 投屏/手机端整块背景的那层光晕。写死过 #101826，换到过年皮肤时
+     页面底色已经是红的，顶上却还挂着一片冷蓝 —— 换肤只换了一半。 */
+  --stage-glow: #101826;
+  --stage-bg: #06070b;
+  --glow-play: #12202a;
+  /* 比 --dim 再暗一档的小字（时间戳、单位、脚注） */
+  --dim2: #5f6478;
+}
+
+/* 过年皮肤：红金。
+   现场真正需要两套皮肤的原因不是好看 —— 是过年那几天，
+   一屋子红金和平时那套冷色摆在一起，人一进门就知道「今天不一样」。
+   只换颜色，不动布局：换布局等于两套东西都要验一遍。 */
+body[data-theme="festive"] {
+  --bg: #170a0b;
+  --bg2: #221013;
+  --card: #2a1418;
+  --card2: #35181d;
+  --line: #4a2027;
+  --line2: #5e2932;
+  --text: #ffeee9;
+  --dim: #cf9c94;
+  --teal: #ffcf5c;
+  --teal-rgb: 255, 207, 92;
+  --purple: #ff7a7a;
+  --amber: #ffd166;
+  --red: #ff4d4d;
+  --green: #7ee08a;
+  --prim1: #ffd76a;
+  --prim2: #e8a92f;
+  --prim-fg: #2a1400;
+  --title1: #fff6e2;
+  --title2: #e8b45f;
+  --stage-glow: #2c1014;
+  --stage-bg: #12070a;
+  --glow-play: #2b1116;
+  --dim2: #b07f77;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+button, input, select { font-family: inherit; }
+button { cursor: pointer; border: 0; background: none; color: inherit; }
+h1, h2, h3, p { margin: 0; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--card2);
+  border: 1px solid var(--line2);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  transition: transform .08s, background .15s, border-color .15s, opacity .15s;
+  user-select: none;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .38; }
+.btn.primary { background: linear-gradient(180deg, var(--prim1), var(--prim2)); color: var(--prim-fg); border-color: transparent; }
+.btn.ok { background: rgba(61, 220, 132, .14); border-color: rgba(61, 220, 132, .45); color: var(--green); }
+.btn.danger { background: rgba(239, 91, 91, .12); border-color: rgba(239, 91, 91, .4); color: var(--red); }
+.btn.plain { background: transparent; }
+.btn.wide { width: 100%; }
+
+.input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+}
+.input:focus { border-color: var(--teal); }
+.input::placeholder { color: #5a5f75; }
+
+select.input { padding: 10px 12px; font-size: 14px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.muted { color: var(--dim); }
+.tiny { font-size: 12px; }
+.mono { font-variant-numeric: tabular-nums; }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(20, 22, 32, .96);
+  border: 1px solid var(--line2);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  z-index: 90;
+  max-width: 80vw;
+  text-align: center;
+}
+.toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.offline {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: #6b4a12;
+  color: #ffe7b0;
+  text-align: center;
+  font-size: 13px;
+  padding: 6px;
+  transform: translateY(-100%);
+  transition: transform .2s;
+  z-index: 95;
+}
+.offline.on { transform: translateY(0); }
+
+/* 通用计时条 */
+.tbar {
+  height: 4px;
+  background: var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.tbar > i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--teal);
+  transition: width .25s linear, background .3s;
+}
+.tbar.warn > i { background: var(--amber); }
+.tbar.hot > i { background: var(--red); }

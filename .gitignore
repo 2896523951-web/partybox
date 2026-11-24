@@ -1,0 +1,22 @@
+# 运行时数据（现场产生的，不进仓库）
+snapshots/
+packs/_custom.json
+packs/_punish.json
+media/*
+!media/把歌放这里.txt
+sfx/*
+!sfx/把音效放这里.txt
+启动日志.txt
+preview/
+
+# 依赖与系统
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# 本地工具与项目记忆（含路径、偏好，绝不公开）
+.workbuddy/
+
+# 交付物（正常放在仓库外，这里兜底）
+*.zip

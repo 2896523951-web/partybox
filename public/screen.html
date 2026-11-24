@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>投屏 · 聚会游戏机</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="/assets/css/base.css" />
+<link rel="stylesheet" href="/assets/css/screen.css" />
+</head>
+<body class="screen">
+
+<div class="sc-top">
+  <div class="name" id="gName">聚会游戏机</div>
+  <div class="round" id="gRound"></div>
+  <div class="spacer"></div>
+  <div class="clock" id="clock"></div>
+  <button class="fsbtn" id="fsBtn" type="button" title="全屏（F）">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <span>全屏</span>
+  </button>
+</div>
+
+<div class="sc-bar-line" id="tline" style="display:none"><i></i></div>
+
+<div class="sc-main" id="main"></div>
+
+<div class="sc-foot">
+  <div class="team A" id="teamA">
+    <span class="tn" id="tnA">A 队</span>
+    <span class="tv" id="tvA">0</span>
+  </div>
+  <div class="team B" id="teamB">
+    <span class="tn" id="tnB">B 队</span>
+    <span class="tv" id="tvB">0</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="round" id="footNote">扫码加入 →</div>
+</div>
+
+<div id="lobby">
+  <h1>聚会游戏机</h1>
+  <div class="sub">扫码进房间，戴上耳机</div>
+  <div class="qrbox" id="qrBox"></div>
+  <div class="wifi" id="lobbyWifi"></div>
+  <div class="cnt" id="lobbyCnt">等待玩家…</div>
+</div>
+
+<div class="sc-off" id="off">连接中断，正在重连…</div>
+
+<div class="sc-floatlayer" id="floatLayer" aria-hidden="true"></div>
+
+<!-- 仪式动作（H3）：发身份 / 宣布死亡 / 揭晓 / 静场 / 倒计时 / 推大字。
+     一层全屏盖在上面，动作结束自己撤，不打断下面的视图。 -->
+<div class="fxlayer" id="fxLayer" aria-hidden="true"></div>
+
+<!-- S1 转场：换游戏时盖一层，中间是大号游戏名。只在客户端做，
+     SSE 只推一次状态 —— 十几台设备同时播帧，带宽和时序都不值得。 -->
+<div class="sc-trans" id="trans"><b id="transName"></b></div>
+
+<!-- S4 投票倒计时：到点变「超时」，没投的算弃权。 -->
+<!-- 惩罚卡：抽一张、盖上来、8 秒自己撤 -->
+<div class="sc-card-mask" id="cardMask"></div>
+<div class="sc-card" id="cardLayer"><b id="cardTitle"></b><span id="cardBody"></span></div>
+
+<div class="sc-vote" id="votePill"><span>投票</span><b id="voteLeft">1:00</b></div>
+
+<script src="/assets/js/net.js"></script>
+<script src="/assets/js/qrcode.js"></script>
+<script src="/assets/js/view.js"></script>
+<script src="/assets/js/voice.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let timerState = null;
+  let lastView = null;
+  let qrSvg = '';
+  let wifiLabel = '';
+  const voice = new Voice();
+  let seenMood = new Set();
+
+  async function initQR() {
+    const d = await fetch('/api/net').then((r) => r.json()).catch(() => null);
+    if (!d) return;
+    const host = d.addresses.find((a) => !a.address.startsWith('169.254')) || d.addresses[0];
+    const url = host ? `http://${host.address}:${d.port}` : location.origin;
+    paintWifi(d.ssid);
+    if (!d.ssid) retryWifi(0);
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      qrSvg = qr.createSvgTag({ cellSize: 6, margin: 0 });
+      $('qrBox').innerHTML = qrSvg;
+      paintQr();
+    } catch (e) {
+      $('qrBox').textContent = url;
+    }
+  }
+
+  /* 网名是问系统要的，第一次请求经常还没问到（后端要等系统命令回来）。
+     只补一次容易正好撞在它还没好的时候，所以隔几秒再问，最多问三次。 */
+  function retryWifi(n) {
+    if (n >= 3 || wifiLabel) return;
+    setTimeout(async () => {
+      const d = await fetch('/api/net').then((r) => r.json()).catch(() => null);
+      if (d && d.ssid) paintWifi(d.ssid);
+      else retryWifi(n + 1);
+    }, n === 0 ? 2500 : 4000);
+  }
+
+  /* 光有码不够。现场最常听到的一句是「我扫了但打不开」——
+     十次有九次是手机连在另一条网上（比如客房那条 5G，
+     导演台在客厅这条）。名字摆在大屏上，让人自己对照，
+     比主持人挨个问「你连的哪个网」快得多。 */
+  function paintWifi(ssid) {
+    wifiLabel = ssid ? '同一 Wi-Fi：' + ssid : '';
+    const line = $('lobbyWifi');
+    if (line) {
+      line.textContent = wifiLabel || '和导演台连同一个 Wi-Fi';
+      line.classList.toggle('muted', !wifiLabel);
+    }
+    paintWifiSmall();
+  }
+
+  /* 规则卡上那行是每次重绘重建的，所以画完要再补一次 */
+  function paintWifiSmall() {
+    const small = document.getElementById('scWifi');
+    if (small) small.textContent = wifiLabel;
+  }
+
+  /* 规则卡上也要有码：选完游戏还有人陆续进来，
+     大屏这会儿已经不显示扫码页了，不给码就把人挡在门外。
+     规则卡是每次重绘的，所以画完得再塞一次。 */
+  function paintQr() {
+    const box = document.getElementById('scQr');
+    if (box && qrSvg) box.innerHTML = qrSvg;
+    paintWifiSmall();
+  }
+
+  /* 比分从 12 跳到 15 直接替换，站在三米外根本看不到。
+     滚一下，眼睛就跟过去了 —— 这是「像节目」和「像表格」的分界。 */
+  const bumpRaf = {};
+  function bump(el, to) {
+    const from = Number(el.textContent) || 0;
+    if (from === to) return;
+    const key = el.id;
+    if (bumpRaf[key]) cancelAnimationFrame(bumpRaf[key]);
+    const t0 = performance.now();
+    const dur = 480;
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / dur);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = String(Math.round(from + (to - from) * e));
+      if (k < 1) bumpRaf[key] = requestAnimationFrame(step);
+    };
+    bumpRaf[key] = requestAnimationFrame(step);
+  }
+
+  function paintTimer() {    const line = $('tline');
+    if (!timerState || !timerState.endsAt) {
+      line.style.display = 'none';
+      $('clock').textContent = '';
+      return;
+    }
+    const left = Math.max(0, timerState.endsAt - NET.serverNow());
+    const total = Math.max(1, (timerState.total || 0) * 1000);
+    line.style.display = 'block';
+    line.firstElementChild.style.width = Math.min(100, (left / total) * 100) + '%';
+    const s = Math.ceil(left / 1000);
+    $('clock').textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    $('clock').style.color = left < 10000 ? '#ef5b5b' : left < 30000 ? '#f5b942' : '#35e0d0';
+  }
+  setInterval(paintTimer, 200);
+
+  function onScreen(view) {
+    lastView = view;
+    paintVote(view.vote);
+    paintCard(view.card);
+    // 常驻动作在投屏刷新后要补回来；撤掉后也要跟着收
+    if (view.fxNow) {
+      if (!fxCur || fxCur.name !== view.fxNow.name || fxCur.at !== view.fxNow.at) {
+        showFx(view.fxNow.name, view.fxNow.arg, 0);
+        fxCur.at = view.fxNow.at;
+      }
+    } else if (fxCur && fxCur.hold) {
+      hideFx();
+    }
+    // S1：换游戏才转场，同一局刷新不闪
+    if (view.gameName && view.gameName !== lastGame) {
+      lastGame = view.gameName;
+      showTrans(view.gameName);
+    }
+    if (view.theme) document.body.dataset.theme = view.theme;
+    // 综艺模式：比分条不摆出来。数据照常更新，切回比赛立刻能看到
+    document.body.classList.toggle('variety', view.mode !== 'match');
+    if (view.voice !== undefined) voice.set(view.voice);
+    if (view.gameName) {
+      $('lobby').classList.remove('on');
+      $('gName').textContent = view.gameName;
+      $('gRound').textContent = view.round ? `第 ${view.round} 轮` : '';
+      View.renderScreen($('main'), view);
+      if (view.type === 'rules') paintQr();
+      timerState = view.timer || null;
+      paintTimer();
+      const t = view.teams || { A: { score: 0 }, B: { score: 0 } };
+      $('tnA').textContent = (t.A && t.A.name) || 'A 队';
+      $('tnB').textContent = (t.B && t.B.name) || 'B 队';
+      // 比分跳变没人注意到，滚一下眼睛就跟过去了
+      bump($('tvA'), (t.A && t.A.score) || 0);
+      bump($('tvB'), (t.B && t.B.score) || 0);
+      $('teamA').classList.toggle('lead', ((t.A && t.A.score) || 0) > ((t.B && t.B.score) || 0));
+      $('teamB').classList.toggle('lead', ((t.B && t.B.score) || 0) > ((t.A && t.A.score) || 0));
+      // 规则卡上已经写了「N / M 人在场」，页脚别再说一遍
+      $('footNote').textContent =
+        view.type === 'rules' ? '' : (view.online || 0) + ' 人在场';
+    } else {
+      $('lobby').classList.add('on');
+      $('lobbyCnt').textContent = `已加入 ${view.count || 0} 人`;
+    }
+  }
+
+  NET.stream('screen', '', (m) => {
+    if (m.t === 'screen') {
+      onScreen(m.view);
+    } else if (m.t === 'mood') {
+      floatMoods(m.list);
+    } else if (m.t === 'say') {
+      voice.say(m.text);
+    } else if (m.t === 'fx') {
+      if (m.clear) hideFx();
+      else showFx(m.name, m.arg, m.ms);
+    }
+  }, (up) => {
+    $('off').classList.toggle('on', !up);
+  });
+
+  /* ---------------------------------------------- 惩罚卡
+     抽出来就盖一层，8 秒后自己撤；主持人再抽一张会直接替换。 */
+  let cardTimer = null;
+  let cardAt = 0;
+  function paintCard(card) {
+    const el = $('cardLayer');
+    if (!card) {
+      el.classList.remove('on');
+      $('cardMask').classList.remove('on');
+      return;
+    }
+    if (card.at === cardAt) return; // 同一张不重复播
+    cardAt = card.at || 0;
+    $('cardTitle').textContent = card.title || '';
+    $('cardBody').textContent = card.body || '';
+    el.classList.add('on');
+    $('cardMask').classList.add('on');
+    clearTimeout(cardTimer);
+    cardTimer = setTimeout(() => {
+      el.classList.remove('on');
+      $('cardMask').classList.remove('on');
+    }, (card.sec || 8) * 1000);
+  }
+
+  /* ---------------------------------------------- S4 投票倒计时
+     只收一个 dueAt，剩下的本地算 —— 每秒推一次会把十几台设备都拖住。 */
+  let voteTick = null;
+  function paintVote(v) {
+    const el = $('votePill');
+    clearInterval(voteTick);
+    if (!v || !v.dueAt) {
+      el.classList.remove('on');
+      return;
+    }
+    el.classList.add('on');
+    const paint = () => {
+      const left = Math.max(0, v.dueAt - Date.now());
+      if (v.expired || left <= 0) {
+        el.classList.add('over');
+        $('voteLeft').textContent = '超时';
+        clearInterval(voteTick);
+        return;
+      }
+      el.classList.remove('over');
+      const sec = Math.ceil(left / 1000);
+      $('voteLeft').textContent = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+    };
+    paint();
+    voteTick = setInterval(paint, 500);
+  }
+
+  /* ---------------------------------------------- S1 转场
+     0.45 秒：盖上来、名字停一下、淡出去。掉帧也不影响可用性 ——
+     遮罩本身不承载任何信息。 */
+  let lastGame = '';
+  let transTimer = null;
+  function showTrans(name) {
+    const el = $('trans');
+    $('transName').textContent = name;
+    el.classList.add('on');
+    clearTimeout(transTimer);
+    transTimer = setTimeout(() => el.classList.remove('on'), 520);
+  }
+
+  /* ---------------------------------------------- 仪式动作（H3）
+     六个动作都只改这一层，不动下面的视图：动作撤了，画面还是原来那一屏。 */
+
+  let fxTimer = null;
+  let fxTick = null;
+  let fxCur = null; // { name, at, hold } 当前常驻动作
+
+  function hideFx() {
+    clearTimeout(fxTimer);
+    clearInterval(fxTick);
+    fxCur = null;
+    const layer = $('fxLayer');
+    layer.className = 'fxlayer';
+    layer.innerHTML = '';
+  }
+
+  function showFx(name, arg, ms) {
+    const layer = $('fxLayer');
+    clearTimeout(fxTimer);
+    clearInterval(fxTick);
+    // ms = 0 表示常驻：一直挂着，等主持人点「撤掉」
+    fxCur = ms > 0 ? null : { name, at: Date.now(), hold: true };
+    layer.className = 'fxlayer on fx-' + name;
+    layer.innerHTML = '';
+
+    const box = document.createElement('div');
+    box.className = 'fx-box';
+
+    if (name === 'countdown') {
+      box.className += ' fx-num';
+      let n = Math.min(10, Math.max(1, Math.round(Number(arg) || 3)));
+      box.textContent = String(n);
+      layer.appendChild(box);
+      fxTick = setInterval(() => {
+        n -= 1;
+        if (n <= 0) {
+          clearInterval(fxTick);
+          box.textContent = '开始';
+          box.classList.add('go');
+          return;
+        }
+        box.textContent = String(n);
+        // 重放一下缩放动画：去掉再加回来
+        box.style.animation = 'none';
+        void box.offsetWidth;
+        box.style.animation = '';
+      }, 1000);
+    } else if (name === 'bigtext') {
+      box.className += ' fx-big';
+      box.textContent = arg || '';
+      layer.appendChild(box);
+    } else {
+      const TEXT = {
+        deal: ['正在发放身份', '看完就锁屏'],
+        dead: ['有人倒下了', ''],
+        reveal: ['身份揭晓', ''],
+        hush: ['安静', ''],
+      };
+      const [t1, t2] = TEXT[name] || ['', ''];
+      box.innerHTML = '<b></b><span></span>';
+      box.querySelector('b').textContent = t1;
+      box.querySelector('span').textContent = t2;
+      if (name === 'reveal') box.classList.add('fx-flip');
+      if (name === 'dead') box.classList.add('fx-dead');
+      layer.appendChild(box);
+    }
+
+    if (ms > 0) {
+      fxTimer = setTimeout(() => {
+        layer.className = 'fxlayer';
+        layer.innerHTML = '';
+        clearInterval(fxTick);
+      }, ms);
+    }
+  }
+
+  /* 空档表情：从手机点一下，投屏上飘一个上去。
+   *
+   * 走独立事件而不是整屏重绘 —— 重绘会把正在飘的那几个一起清掉，
+   * 现场看到的就是「表情一闪就没」，还不如不做。
+   * 所以这里用 seen 记已经飘过的，只处理新的。 */
+  function floatMoods(list) {
+    const layer = $('floatLayer');
+    for (const x of list || []) {
+      const k = x.at + '|' + x.name + '|' + x.emoji;
+      if (seenMood.has(k)) continue;
+      seenMood.add(k);
+      const el = document.createElement('div');
+      el.className = 'sc-float';
+      el.textContent = x.emoji;
+      // 横向错开，避免十几个人同时点全叠在中间
+      el.style.left = 12 + Math.random() * 76 + '%';
+      el.style.fontSize = 34 + Math.round(Math.random() * 22) + 'px';
+      layer.appendChild(el);
+      setTimeout(() => el.remove(), 3400);
+    }
+    // 记满了就重来：键里带时间戳，清了也不会重复飘
+    if (seenMood.size > 400) seenMood = new Set();
+  }
+
+  /* ---------------------------------------------------- 全屏
+     投屏那个浏览器窗口按 F11 也行，但现场多半是拿遥控/鼠标点的，
+     所以给一个按钮：点一下整页进全屏，再点（或按 Esc）退出来。 */
+
+  const fsBtn = $('fsBtn');
+  const fsOn = () =>
+    document.fullscreenElement || document.webkitFullscreenElement || null;
+
+  function toggleFs() {
+    const el = document.documentElement;
+    if (fsOn()) {
+      (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document);
+    } else {
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req) req.call(el).catch(() => {});
+    }
+  }
+
+  function paintFs() {
+    const on = !!fsOn();
+    fsBtn.classList.toggle('on', on);
+    fsBtn.querySelector('span').textContent = on ? '退出全屏' : '全屏';
+  }
+
+  fsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFs();
+  });
+  document.addEventListener('fullscreenchange', paintFs);
+  document.addEventListener('webkitfullscreenchange', paintFs);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'f' || e.key === 'F') toggleFs();
+  });
+  // 双击画面也能切，投屏电脑上随手点
+  document.addEventListener('dblclick', toggleFs);
+  paintFs();
+
+  initQR();
+})();
+</script>
+</body>
+</html>

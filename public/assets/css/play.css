@@ -1,0 +1,705 @@
+body.play {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 60% at 50% 0%, var(--glow-play) 0%, transparent 60%),
+    var(--bg);
+  overscroll-behavior: none;
+}
+
+/* ------------------------------------------------------------- 入口 */
+
+#gate {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px 26px calc(32px + env(safe-area-inset-bottom));
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+}
+.gate-mark {
+  font-size: 11px;
+  letter-spacing: .32em;
+  color: var(--teal);
+  font-weight: 700;
+  margin-bottom: 18px;
+  opacity: .8;
+}
+.gate-title {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -.01em;
+  line-height: 1.2;
+}
+.gate-sub {
+  margin-top: 12px;
+  color: var(--dim);
+  font-size: 14px;
+  line-height: 1.7;
+}
+#gateForm { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
+#gateForm .input { font-size: 17px; padding: 16px 18px; }
+
+.checkline {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(var(--teal-rgb), .06);
+  border: 1px solid rgba(var(--teal-rgb), .22);
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.5;
+}
+.checkline input {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(var(--teal-rgb), .5);
+  flex: none;
+  margin-top: 1px;
+  position: relative;
+}
+.checkline input:checked { background: var(--teal); border-color: var(--teal); }
+.checkline input:checked::after {
+  content: '';
+  position: absolute;
+  left: 6px; top: 2px;
+  width: 5px; height: 10px;
+  border: 2px solid var(--prim-fg);
+  border-top: 0; border-left: 0;
+  transform: rotate(42deg);
+}
+
+.gate-note {
+  margin-top: 22px;
+  font-size: 12px;
+  color: var(--dim2);
+  line-height: 1.8;
+}
+
+/* ------------------------------------------------------------- 舞台 */
+
+#stage {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+#stage.on { display: flex; }
+#gate.hide { display: none; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(12px + env(safe-area-inset-top)) 18px 10px;
+  font-size: 13px;
+  color: var(--dim);
+}
+.topbar .who { color: var(--text); font-weight: 700; font-size: 15px; }
+.chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--card2);
+  border: 1px solid var(--line2);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.chip.A { color: #7fd4ff; border-color: rgba(127, 212, 255, .35); }
+.chip.B { color: #ffb27f; border-color: rgba(255, 178, 127, .35); }
+.topbar .spacer { flex: 1; }
+
+.awake {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line2);
+  background: var(--card);
+  font-size: 11px;
+  color: var(--dim);
+}
+.awake i { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); }
+.awake.on { color: var(--teal); border-color: rgba(var(--teal-rgb), .35); }
+.awake.on i { background: var(--teal); box-shadow: 0 0 8px var(--teal); }
+.awake.need { color: var(--amber); border-color: rgba(245, 185, 66, .35); }
+.awake.need i { background: var(--amber); }
+
+#stage .tbar { margin: 0 18px; }
+
+main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0 40px;
+  overflow-y: auto;
+}
+
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+.dot.off { background: var(--red); box-shadow: none; }
+
+/* ------------------------------------------------------------- 视图 */
+
+.vw {
+  width: 100%;
+  max-width: 520px;
+  padding: 0 24px;
+  text-align: center;
+  animation: fadein .22s ease-out;
+}
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.vw-title { font-size: 24px; font-weight: 850; letter-spacing: -.01em; }
+.vw-sub { margin-top: 8px; font-size: 13.5px; color: var(--dim); line-height: 1.65; }
+.vw-big {
+  margin: 22px 0 8px;
+  font-size: 76px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.02em;
+}
+.vw-hint { margin-top: 16px; font-size: 13px; color: var(--amber); }
+.vw-reveal { margin-top: 16px; font-size: 15px; color: var(--teal); font-weight: 700; }
+.vw-footer { margin-top: 18px; font-size: 12px; color: var(--dim2); }
+
+/* 规则卡：还没开局时手机上给三条规则。
+   手机上有的看，就不用凑到别人屏幕前，也不会一直问「怎么玩」。 */
+.rulerows {
+  margin: 18px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rulerow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+.rulenum {
+  flex: 0 0 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(var(--teal-rgb), .12);
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+.ruletxt {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.vw-btn { margin-top: 22px; padding: 16px; font-size: 16px; }
+
+.vw.tone-active .vw-title { color: var(--teal); }
+.vw.tone-done .vw-title { color: var(--amber); }
+.vw.tone-muted .vw-title { color: var(--dim); }
+
+/* 词卡 */
+.wordbox {
+  position: relative;
+  margin: 22px 0 6px;
+  border-radius: 22px;
+  border: 1px solid var(--line2);
+  background: linear-gradient(180deg, var(--card2), var(--card));
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 26px 20px;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+}
+.wordbox.tone-wolf { border-color: rgba(168, 85, 247, .5); box-shadow: 0 0 40px rgba(168, 85, 247, .12) inset; }
+.wordbox.tone-good { border-color: rgba(var(--teal-rgb), .45); }
+/* 身份卡没按住的时候，连边框颜色都不能泄露阵营 —— 紫色边框等于直接告诉旁边的人 */
+.wordbox.hold:not(.show).tone-wolf,
+.wordbox.hold:not(.show).tone-good {
+  border-color: var(--line2);
+  box-shadow: none;
+}
+.wordtext {
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  line-height: 1.3;
+  filter: blur(9px);
+  opacity: 0;
+  transition: filter .1s, opacity .1s;
+  word-break: break-word;
+}
+.wordbox.show .wordtext { filter: none; opacity: 1; }
+.wordbox.show .wordnote { filter: none; opacity: 1; }
+.wordbox.show .wordmask { opacity: 0; }
+/* 遮罩下的第二行（例如双卧底的同伙）。走绝对定位是为了不参与
+   flex 居中 —— 有 note 和没 note 的手机，词的位置必须一模一样。 */
+.wordnote {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12.5px;
+  letter-spacing: .04em;
+  color: var(--dim);
+  filter: blur(9px);
+  opacity: 0;
+  transition: filter .1s, opacity .1s;
+}
+.wordmask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--dim);
+  font-size: 13px;
+  letter-spacing: .1em;
+  transition: opacity .12s;
+}
+.wordmask-icon { font-size: 26px; opacity: .7; }
+.wordhint {
+  position: absolute;
+  bottom: 12px;
+  font-size: 11.5px;
+  color: var(--dim2);
+}
+.wordlen {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 11.5px;
+  color: var(--dim2);
+}
+
+/* 选项 */
+.choices { margin-top: 20px; display: grid; gap: 10px; }
+.choice {
+  padding: 15px 16px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line2);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  transition: background .12s, border-color .12s, transform .08s;
+}
+.choice:active { transform: scale(.985); }
+.choice.on {
+  background: rgba(var(--teal-rgb), .12);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+.choices .btn { margin-top: 8px; }
+
+/* 按住才看的选项（笨蛋杀手的杀手手机）
+ * 名单本身就会暴露身份，所以整块压在遮罩下：
+ * 按住 → 露出名单 → 滑到名字上 → 松手即喊。
+ * 只按一下不滑，什么都不发，防手滑扣子弹。 */
+.holdpick {
+  position: relative;
+  margin-top: 20px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.holdpick .choices { margin-top: 0; }
+/* 7 个名字以上排两列：按住的时候滑动手势被拿去选人了，名单没法滚 */
+.holdpick .choices.many { grid-template-columns: 1fr 1fr; gap: 8px; }
+.holdpick .choices.many .choice { padding: 12px 8px; font-size: 13.5px; }
+.holdpick-note {
+  font-size: 12.5px;
+  color: var(--dim);
+  line-height: 1.6;
+  margin: 0 4px 10px;
+}
+.holdpick-body > .holdpick-note:last-child { margin: 10px 4px 0; }
+/* 尺寸、字号、颜色都跟普通身份卡的遮罩对齐：
+ * 两张卡长得一样，旁边人才不会靠「他那个卡片长什么样」猜身份 */
+.holdpick-mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--card2), var(--card));
+  border: 1px solid var(--line2);
+  color: var(--dim);
+  font-size: 13px;
+  letter-spacing: .1em;
+  transition: opacity .12s;
+}
+.holdpick-icon { font-size: 26px; opacity: .7; }
+/* 露出来时不能挡住 elementFromPoint，否则测不到手指下面是谁 */
+.holdpick.show .holdpick-mask { opacity: 0; pointer-events: none; }
+.holdpick .choice.hot {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(239, 91, 91, .12);
+  transform: scale(.985);
+}
+
+/* 输入 */
+.answer { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+.answer .input { text-align: center; font-size: 20px; font-weight: 700; padding: 16px; }
+
+/* 抢答 */
+.buzzwrap { margin-top: 26px; display: flex; justify-content: center; }
+.buzzbtn {
+  width: min(64vw, 260px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, var(--line2), var(--card) 70%);
+  border: 2px solid var(--line2);
+  color: var(--dim);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  transition: transform .09s, background .2s, border-color .2s, color .2s, box-shadow .2s;
+  user-select: none;
+}
+.buzzbtn:active { transform: scale(.95); }
+.buzzbtn.on {
+  background: radial-gradient(circle at 50% 38%, var(--prim1), var(--prim2) 72%);
+  border-color: var(--prim1);
+  color: var(--prim-fg);
+  box-shadow: 0 0 50px rgba(var(--teal-rgb), .35);
+}
+.buzzbtn.hit { transform: scale(.9); }
+.buzzbtn:disabled { opacity: .3; }
+
+/* 出局遮罩 */
+.vw-muted { opacity: .75; }
+
+/* 大屏无关的小屏适配 */
+@media (max-height: 700px) {
+  .vw-title { font-size: 21px; }
+  .wordbox { min-height: 160px; }
+  .wordtext { font-size: 32px; }
+  .buzzbtn { width: min(52vw, 210px); font-size: 22px; }
+}
+
+/* 词卡 + 选项同时出现时（卧底投票），把词卡压扁，别把投票挤出屏幕 */
+.wordbox.compact { min-height: 150px; margin: 14px 0 4px; }
+.wordbox.compact .wordtext { font-size: 30px; }
+
+/* --------------------------------------- 耳机音乐条（舞蹈狼人杀）
+   音乐只在耳机里放，每台手机自己调音量。狼王的那台也在「放」，
+   只是没有声音 —— 界面长得一模一样，才不会一眼被看出来。 */
+
+.musicbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 16px);
+  width: min(420px, calc(100% - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px 14px 12px;
+  border-radius: 16px;
+  background: rgba(13, 16, 22, .86);
+  border: 1px solid rgba(255, 255, 255, .09);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .5);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .24s ease, transform .24s ease;
+  z-index: 40;
+}
+.musicbar.on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+.musicbar .mnote {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--teal);
+  animation: mbeat 1s ease-in-out infinite;
+}
+@keyframes mbeat {
+  0%, 100% { opacity: .45; transform: scale(.94); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.musicbar .mrange {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line2);
+  outline: none;
+  margin: 0;
+}
+.musicbar .mrange::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--teal);
+  border: none;
+  box-shadow: 0 0 0 4px rgba(var(--teal-rgb), .14);
+}
+.musicbar .mrange::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--teal);
+  border: none;
+}
+.musicbar .mpct {
+  font-size: 11px;
+  color: var(--dim);
+  min-width: 34px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.musicbar .mmute {
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+}
+.musicbar .mmute.on {
+  background: rgba(239, 68, 68, .16);
+  border-color: rgba(239, 68, 68, .38);
+  color: #fca5a5;
+}
+
+/* 音乐条第二版：两行 —— 上面是曲目进度（只读），下面是音量。
+   拖动只给主持台，玩家这边只显示；各拖各的话，好人之间也踩不到一起。 */
+
+.musicbar .mrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+}
+.musicbar .mtime {
+  font-size: 11px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  min-width: 32px;
+  text-align: center;
+}
+.musicbar .mtrack {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line2);
+  overflow: hidden;
+}
+.musicbar .mtrack i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(var(--teal-rgb), .5), var(--teal));
+  transition: width .18s linear;
+}
+
+/* 音量归主持人管，玩家端这行只用来显示「现在多响」 */
+.musicbar .mhint {
+  font-size: 11px;
+  color: var(--dim2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.musicbar .spacer { flex: 1; }
+
+/* 抢答按钮里的两行字：上面状态，下面小字（倒数 / 提示） */
+.buzzbtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.buzzbtn .buzzlabel { line-height: 1.2; }
+.buzzbtn .buzzsub {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  opacity: .75;
+  min-height: 16px;
+}
+.buzzbtn.on .buzzsub { opacity: .9; }
+
+/* -------------------------------------------------- 围观下注（O1）
+   只给没在局里的人。两列摆开，人多了也能一屏看完；
+   点一下就发，没有提交按钮 —— 空档只有几十秒。 */
+.betwrap { margin-top: 20px; }
+.betpick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.betpick.many .choice {
+  font-size: 13px;
+  padding: 11px 8px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.betnote {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--dim2);
+  text-align: center;
+}
+.betbig {
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--teal);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* -------------------------------------------------- 空档表情（O4）
+   等下一局的时候点一下。不做输入框：现场能打字就会有人骂人。 */
+.moodrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 22px;
+}
+.moodbtn {
+  font-size: 22px;
+  line-height: 1;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  transition: transform .08s, border-color .12s;
+}
+.moodbtn:active { transform: scale(.9); border-color: var(--teal); }
+
+/* ---------------------------------------------------- 本局结算（O5） */
+.settlebox { margin-top: 16px; }
+.settlebig {
+  font-size: 30px;
+  font-weight: 850;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--teal);
+  margin-bottom: 14px;
+}
+
+/* 手机上的榜单。
+   之前这里一条样式都没有，名次、名字、分数全挤成「1阿凯9今晚MVP」一行 ——
+   投屏那边有 .sc-board 撑着，手机上就露馅了。 */
+.vlist { display: flex; flex-direction: column; gap: 6px; }
+.vrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .04);
+}
+.vcell { font-size: 15px; }
+.vcell.lead {
+  flex: 0 0 22px;
+  text-align: right;
+  color: var(--dim);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* 数组写法的最后一格是分数：靠右、加大 */
+.vcell:last-child {
+  margin-left: auto;
+  font-weight: 800;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.vmid {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  text-align: left; /* 榜单左对齐才好扫，别跟着页面的居中走 */
+}
+.vname {
+  font-size: 16px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vtag { font-size: 11px; color: var(--teal); opacity: .9; }
+.vnum {
+  font-size: 20px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-align: right;
+}
+
+
+/* ------------------------------------------------ P1 指令与进度
+   抬眼看一眼就够，不用读整屏。lead 是「现在该干嘛」，prog 是「到哪一步了」。 */
+.vw-lead {
+  font-size: 12.5px;
+  letter-spacing: .04em;
+  color: var(--teal, #4fd1c5);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.vw-prog {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--dim, rgba(255, 255, 255, .45));
+  font-variant-numeric: tabular-nums;
+}
+
+/* P2 完成态：一个对勾，比任何字都直接 */
+.vw-done {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #6ee7c0;
+  background: rgba(110, 231, 192, .12);
+  border: 1px solid rgba(110, 231, 192, .3);
+}
+
+/* C1 挑棒次：被占的棒次灰掉，点不动 */
+.choice.off { opacity: .38; pointer-events: none; }

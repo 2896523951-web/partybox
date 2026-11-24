@@ -1,0 +1,2300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>导演台 · 聚会游戏机</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="/assets/css/base.css" />
+<link rel="stylesheet" href="/assets/css/host.css" />
+</head>
+<body class="host">
+
+<div class="hgrid">
+  <div class="hbar">
+    <div class="logo">聚会游戏机 <b>·</b> 导演台</div>
+
+    <!-- 游戏目录：放上面，随时能换 -->
+    <div class="gmenu" id="gmenu">
+      <button class="gbtn" id="gbtn">
+        <span class="glabel" id="gbtnName">选择游戏</span>
+        <i class="gcaret">▾</i>
+      </button>
+      <div class="glist" id="glist"></div>
+    </div>
+
+    <div class="meta">
+      <span>在场 <b id="mCount">0</b></span>
+      <span>在线 <b id="mOnline">0</b></span>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn plain" id="btnShow" style="padding:7px 12px;font-size:12px">今晚</button>
+    <button class="btn plain" id="btnReview" style="padding:7px 12px;font-size:12px">复盘</button>
+    <button class="btn plain" id="btnHealth" style="padding:7px 12px;font-size:12px">开场体检</button>
+    <a class="btn plain" href="/screen" target="_blank" style="padding:7px 12px;font-size:12px;text-decoration:none">打开投屏</a>
+    <button class="btn primary" id="btnSound" style="padding:8px 14px;font-size:13px">启用声音</button>
+    <!-- 破坏性操作收进「⋯」：这两个一点就清，以前跟安全按钮并排、样式也差不多，
+         现场手滑一次整晚重来。 -->
+    <button class="btn plain" id="btnAudio" style="padding:7px 12px;font-size:12px" title="收起 / 展开右侧栏（音频库 + 操作记录），把屏幕让给提词器">侧栏</button>
+    <button class="btn plain" id="btnMore" style="padding:7px 12px;font-size:13px" title="更多">⋯</button>
+    <div class="moremenu" id="moreMenu">
+      <button class="mi" id="btnReset">
+        <b>整场重置</b><span>比分清零，人留在屋里</span>
+      </button>
+      <button class="mi" id="btnRemote">
+        <b>手机遥控</b><span>6 位临时码，手机点完成 / 跳过 / 仪式</span>
+      </button>
+      <button class="mi danger" id="btnKickAll">
+        <b>清空玩家</b><span>所有人都要重新扫码</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 左栏 -->
+  <div class="col left">
+    <div class="panel">
+      <h3>玩家入口</h3>
+      <div class="qr">
+        <div id="qrBox"></div>
+        <div class="addrbox">
+          <div class="addr" id="addr">—</div>
+          <button class="copybtn" id="btnCopyAddr" title="复制玩家入口地址">复制</button>
+          <div class="ssid" id="ssid">同一 Wi-Fi</div>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:8px">只把这个地址给玩家。别把当前这条带密钥的地址发出去。</div>
+    </div>
+
+    <div class="panel" style="flex:1">
+      <h3>玩家 <span id="plCount" class="muted" style="letter-spacing:0"></span></h3>
+      <div class="plbar">
+        <button class="btn plain" id="btnGroup">分组</button>
+        <button class="btn plain" id="btnRegroup">重新分组</button>
+        <button class="btn plain" id="btnUngroup">取消分组</button>
+        <button class="btn plain" id="btnPrune">清离线</button>
+      </div>
+      <div class="players" id="players"></div>
+      <div class="controls" id="plActions" style="margin-top:10px;display:none">
+        <button class="btn plain" data-pl="A" style="padding:6px 10px;font-size:11.5px">A 队</button>
+        <button class="btn plain" data-pl="B" style="padding:6px 10px;font-size:11.5px">B 队</button>
+        <button class="btn plain" data-pl="-" style="padding:6px 10px;font-size:11.5px">移出队</button>
+        <button class="btn plain" data-pl="+1" style="padding:6px 10px;font-size:11.5px">+1</button>
+        <button class="btn plain" data-pl="-1" style="padding:6px 10px;font-size:11.5px">-1</button>
+        <button class="btn danger" data-pl="kick" style="padding:6px 10px;font-size:11.5px">移出</button>
+      </div>
+      <!-- 跨游戏的私密音效：谁走神、谁拖节奏，往他耳机里放一段。
+           没戴耳机的人不显示这一栏 —— 放出来是全场公放，不是耳返攻击。 -->
+      <div class="earbar" id="plEar" style="display:none">
+        <span class="eb-t">耳机里放</span>
+        <select id="ebSel" class="eb-sel"></select>
+        <button class="btn primary" id="ebPlay" style="padding:6px 10px;font-size:11.5px">放</button>
+        <button class="btn danger" id="ebStop" style="padding:6px 10px;font-size:11.5px;display:none">停</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 中栏 -->
+  <div class="col mid">
+    <div class="ghead">
+      <h2 id="gName">未选择游戏</h2>
+      <p id="gDesc"></p>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn plain tiny" id="btnPanel" type="button" style="display:none" title="临时回到原来的三栏面板">展开面板</button>
+      <button class="btn plain tiny" id="rcShow" type="button" title="把这张规则卡重新打上投屏">规则卡</button>
+      <span class="vote-pill" id="votePillHost" style="display:none"></span>
+      <div class="mono" id="timer" style="font-size:22px;font-weight:800;color:#5f6478"></div>
+    </div>
+    <!-- 仪式动作（H3）：六个通用动作，任何游戏下都能单独触发。
+         投屏出动画，声音从这台电脑出去（投屏永不发声那条红线不破）。 -->
+    <div class="fxbar" id="fxBar">
+      <span class="fx-t">仪式</span>
+      <button class="fx-b" data-fx="deal">发身份</button>
+      <button class="fx-b" data-fx="dead">宣布死亡</button>
+      <button class="fx-b" data-fx="reveal">揭晓身份</button>
+      <button class="fx-b" data-fx="hush">静场</button>
+      <button class="fx-b" data-fx="countdown">倒计时</button>
+      <button class="fx-b" id="punishBtn" title="抽一张惩罚卡，投屏出卡片">惩罚卡</button>
+      <button class="fx-b fx-mode" id="punishModeBtn" title="切换惩罚卡口径：清爽 / 酒桌">清爽</button>
+      <button class="fx-b fx-clear" id="fxClearBtn" style="display:none" title="把常驻的仪式动作收掉">撤掉</button>
+      <button class="fx-b" id="judgeBtn" title="开裁决：手机退场的局，由你判谁先答对">裁决</button>
+      <span class="fx-big-wrap">
+        <input id="fxText" class="fx-in" maxlength="20" placeholder="推一句大字…" />
+        <button class="fx-b" id="fxBig">推上屏</button>
+      </span>
+    </div>
+
+    <!-- P0 裁决条：名单 + 对 / 错 / 下一个。开着「打点」时点名字只记一次参与，不判分。 -->
+    <div class="judgebar" id="judgeBar" style="display:none">
+      <span class="j-tag" id="judgeLabel">裁决</span>
+      <div class="j-chips" id="judgeChips"></div>
+      <button class="j-btn ok" id="judgeOk">对</button>
+      <button class="j-btn no" id="judgeNo">错</button>
+      <button class="j-btn" id="judgeNext">下一个</button>
+      <button class="j-btn tap" id="judgeTapBtn" title="点名字只记一次参与，不判分">打点</button>
+      <button class="j-btn ghost" id="judgeEnd">结束</button>
+    </div>
+
+    <div class="rulescard" id="rulesCard" style="display:none">
+      <div class="rc-head">
+        <span class="rc-tag">规则卡 · 正在投屏上</span>
+        <span style="flex:1"></span>
+        <button class="btn plain tiny" id="rcHide" type="button">收起</button>
+      </div>
+      <ol class="rc-list" id="rcList"></ol>
+    </div>
+    <!-- 提词器（H2）：开局后中栏就换成这三行。
+         上面是「这一步」，中间是要说的那句话，下面灰字是下一步。
+         台词来自 games/<id>/script；没写脚本的游戏用通用三段式。 -->
+    <div class="prompter" id="prompter" style="display:none">
+      <div class="pp-top">
+        <span class="pp-step" id="ppStep">1 / 1</span>
+        <span class="pp-cue" id="ppCue">发身份</span>
+        <span class="pp-src" id="ppSrc"></span>
+      </div>
+      <div class="pp-say" id="ppSay"></div>
+      <div class="pp-next" id="ppNext"></div>
+      <div class="pp-btns">
+        <button class="btn primary" id="ppDone">完成</button>
+        <button class="btn plain" id="ppSkip">跳过</button>
+        <button class="btn plain" id="ppAgain">再说一遍</button>
+      </div>
+    </div>
+
+    <!-- 这一晚的托底：自动推进 / 围观下注 / 本局结束。
+         跟玩哪个游戏无关，所以不放进游戏的 controls 里。 -->
+    <!-- 5：选完游戏先在大屏放规则，主持人点这里开始 -->
+    <div class="startbar" id="startBar" style="display:none">
+      <button class="btn primary wide" id="startGameBtn">开始</button>
+      <span class="tiny muted" id="startHint">大屏正在放规则，讲完点开始</span>
+    </div>
+    <div class="livebar" id="livebar"></div>
+    <div class="info" id="info"></div>
+    <div class="controls" id="controls"></div>
+    <div id="tableBox"></div>
+  </div>
+
+  <!-- 右栏 -->
+  <div class="col right">
+    <div class="panel">
+      <h3>素材库 <span class="muted" style="letter-spacing:0">游戏用</span>
+        <span class="q" title="两个分区：音频（游戏耳机里放的）和词库（游戏里用的词）。房间里的公共音乐用你自己的设备放就行。声音都从这台电脑出去，接 HDMI 或 3.5mm，别用蓝牙。">?</span>
+      </h3>
+      <div class="mat-tabs">
+        <button class="mat-tab on" id="matAudio" type="button">音频</button>
+        <button class="mat-tab" id="matPacks" type="button">词库</button>
+      </div>
+      <div id="matAudioBox">
+      <div class="track-name" id="trackName">内置节拍</div>
+      <div class="audio-row">
+        <select class="input" id="trackSel" style="flex:1"></select>
+      </div>
+      <div class="audio-row">
+        <span class="tiny muted" style="width:34px">起点</span>
+        <input class="input" id="playFrom" type="number" min="0" step="1" placeholder="秒" style="width:64px;padding:6px 8px" />
+        <span class="tiny muted" style="flex:1">秒，留空从头播</span>
+        <button class="btn plain" id="btnDelTrack" style="padding:6px 10px;white-space:nowrap;flex:0 0 auto" title="删掉当前选中的这首">删</button>
+      </div>
+      <div class="audio-row">
+        <button class="btn primary" id="btnPlay" style="padding:9px 12px;white-space:nowrap;flex:0 0 auto">播放</button>
+        <button class="btn plain" id="btnPause" style="padding:9px 12px;white-space:nowrap;flex:0 0 auto">暂停</button>
+        <button class="btn plain" id="btnStop" style="padding:9px 12px;white-space:nowrap;flex:0 0 auto">停</button>
+        <span class="badge off" id="audState"><i></i>未启用</span>
+      </div>
+      <div class="audio-row">
+        <span class="tiny muted" style="width:52px">音量</span>
+        <input type="range" id="vol" min="0" max="100" value="85" style="flex:1" />
+      </div>
+      <div class="audio-row">
+        <span class="tiny muted" style="width:52px">节拍 BPM</span>
+        <input type="range" id="bpm" min="80" max="180" value="122" style="flex:1" />
+        <span class="tiny mono" id="bpmVal" style="width:30px;text-align:right">122</span>
+      </div>
+      <div class="uplabel">上传音频 <span>进曲目库，舞蹈狼人杀能选</span></div>
+      <label class="drop" id="dropAudio">
+        <input type="file" id="upload" accept=".mp3,.m4a,.wav,.ogg,.aac,.flac" multiple />
+        <b>选文件 / 拖进来</b>
+        <span>MP3 · M4A · WAV · OGG · FLAC</span>
+      </label>
+      <div class="upnote" id="upNoteAudio"></div>
+
+      <div class="uplabel" style="margin-top:10px">上传私密音效 <span>只进被点名那台的耳机</span></div>
+      <label class="drop" id="dropSfx">
+        <input type="file" id="uploadSfx" accept=".mp3,.m4a,.wav,.ogg,.aac,.flac" multiple />
+        <b>选文件 / 拖进来</b>
+        <span>左栏「耳机里放」、传声筒灌杂音用</span>
+      </label>
+      <div class="upnote" id="upNoteSfx"></div>
+      </div>
+
+      <div id="matPacksBox" style="display:none">
+        <div class="mat-note">游戏里用的词。内置的只读，现场加的词另存一层，更新程序不会被冲掉。</div>
+        <div class="pk-mini" id="pkMini"></div>
+        <button class="btn plain wide" id="btnPacks" style="margin-top:8px;padding:9px">打开词库管理</button>
+      </div>
+    </div>
+
+    <div class="panel" style="flex:1">
+      <h3>操作记录 <button class="btn plain tiny" id="momentBtn" type="button" title="记一句今晚的名场面，综艺结算时会放出来">记一段</button></h3>
+      <div class="log" id="logLines"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 词库管理。
+     内置词库那几个 json 只读，这里改的全部落在 packs/_custom.json 这个覆盖层里：
+     加词 = 记进 add，删内置的词 = 记进 hide（随时能恢复默认），新建词库 = 记进 packs。
+     这样以后我更新内置词库，不会把你现场加的词冲掉。 -->
+<div class="pmask" id="packMask">
+  <div class="pmodal">
+    <div class="pm-head">
+      <h2>词库</h2>
+      <span class="pm-sub" id="packSub"></span>
+      <div class="spacer"></div>
+      <button class="pm-x" id="packClose" title="关闭">×</button>
+    </div>
+    <div class="pm-body">
+      <div class="pm-side">
+        <div class="pm-list" id="packList"></div>
+        <div class="pm-new">
+          <input class="input" id="packNewName" placeholder="新词库叫什么" maxlength="20" />
+          <select class="input" id="packNewType">
+            <option value="word">词 + 提示</option>
+            <option value="pair">词对（卧底）</option>
+            <option value="question">问题（投票）</option>
+          </select>
+          <button class="btn plain" id="packNewBtn">+ 新建词库</button>
+        </div>
+      </div>
+      <div class="pm-main">
+        <div class="pm-form" id="packForm"></div>
+        <div class="pm-bar">
+          <input class="input" id="packFind" placeholder="在词库里搜…" />
+          <span class="pm-count" id="packCount"></span>
+          <button class="btn plain" id="packReset" style="padding:6px 10px;font-size:11.5px">恢复默认</button>
+          <button class="btn danger" id="packDel" style="padding:6px 10px;font-size:11.5px">删除词库</button>
+        </div>
+        <div class="pm-words" id="packWords"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- H4 手机遥控：给一个 6 位临时码 + 二维码。
+     码只够推进流程，换游戏/清人都不在权限里 —— 所以可以放心念给旁边人。 -->
+<div class="pmask" id="remoteMask">
+  <div class="pmodal pm-narrow">
+    <div class="pm-head">
+      <h2>手机遥控</h2>
+      <span class="pm-sub">手机和这台电脑同一个 Wi-Fi</span>
+      <div class="spacer"></div>
+      <button class="pm-x" id="remoteClose" title="关闭">×</button>
+    </div>
+    <div class="pm-body col-one">
+      <div class="rc-code" id="remoteCode">------</div>
+      <div class="addr" id="remoteUrl" style="text-align:center;margin-bottom:10px">—</div>
+      <div class="qr" style="justify-content:center;align-items:center" id="remoteQrBox"></div>
+      <div class="row2" style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn plain" id="remoteNew" style="flex:1">换一个码</button>
+        <button class="btn plain" id="remoteDone" style="flex:1">好了</button>
+      </div>
+      <div class="hint" style="margin-top:10px">码 4 小时内有效。手机上能做：完成 / 跳过 / 再说一遍、四个仪式动作、推大字、以及这一局的主按钮。</div>
+    </div>
+  </div>
+</div>
+
+<!-- 7.2 名场面：一句话，40 字以内。存文字不存截图 —— 现场记的是那句话。 -->
+<div class="pmask" id="momentMask">
+  <div class="pmodal pm-narrow">
+    <div class="pm-head">
+      <h2>记下这段</h2>
+      <span class="pm-sub">综艺结算时会放出来</span>
+      <div class="spacer"></div>
+      <button class="pm-x" id="momentClose" title="关闭">×</button>
+    </div>
+    <div class="pm-body col-one">
+      <input class="input" id="momentText" maxlength="40" placeholder="比如：老周说他从来没抽到过狼" style="width:100%" />
+      <div class="row2" style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn plain" id="momentCancel" style="flex:1">算了</button>
+        <button class="btn primary" id="momentSave" style="flex:1">记下</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- A2 惩罚卡管理：自定义卡落 packs/_punish.json，和词库一个路子 -->
+<div class="pmask" id="pcMask">
+  <div class="pmodal pm-narrow">
+    <div class="pm-head">
+      <h2>惩罚卡</h2>
+      <span class="pm-sub">内置 12 张 + 你自己加的</span>
+      <div class="spacer"></div>
+      <button class="pm-x" id="pcClose" title="关闭">×</button>
+    </div>
+    <div class="pm-body col-one">
+      <div class="pc-list" id="pcList"></div>
+      <div class="sec-t" style="margin-top:14px">加一张</div>
+      <input class="input" id="pcTitle" maxlength="8" placeholder="标题，比如「背一句诗」" />
+      <input class="input" id="pcBody" maxlength="30" placeholder="清爽说法，比如「背一句小学课文」" style="margin-top:8px" />
+      <input class="input" id="pcBar" maxlength="30" placeholder="酒桌说法（可不填，默认同清爽）" style="margin-top:8px" />
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input class="input" id="pcSec" type="number" min="3" max="20" value="8" style="width:90px" />
+        <span class="tiny muted" style="align-self:center">秒后自动撤</span>
+        <div class="spacer" style="flex:1"></div>
+        <button class="btn primary" id="pcAdd">加上去</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 今晚：节目单 + 语音 + 皮肤。
+     这三件事都是「围着整场转」的，跟具体某个游戏无关，
+     所以不进游戏面板，收在这里。 -->
+<div class="pmask" id="showMask">
+  <div class="pmodal pm-narrow">
+    <div class="pm-head">
+      <h2>今晚</h2>
+      <span class="pm-sub" id="showSub"></span>
+      <div class="spacer"></div>
+      <button class="pm-x" id="showClose" title="关闭">×</button>
+    </div>
+    <div class="pm-body col-one">
+      <div class="show-tabs" id="showTabs"></div>
+      <div class="show-warn" id="showWarn" style="display:none"></div>
+      <div class="show-list" id="showList"></div>
+      <div class="show-foot">
+        <button class="btn primary" id="showNextBtn" style="flex:1">下一项</button>
+      </div>
+
+      <div class="sep-line"></div>
+
+      <div class="set-row">
+        <span class="sr-lab">语音播报</span>
+        <span class="sr-hint" id="voiceHint">时间到 / 本局结束，从这台电脑出声</span>
+        <button class="btn plain" id="voiceBtn" style="padding:6px 12px;font-size:12px">关</button>
+        <button class="btn plain" id="voiceTest" style="padding:6px 12px;font-size:12px">试一句</button>
+      </div>
+      <div class="set-row">
+        <span class="sr-lab">皮肤</span>
+        <span class="sr-hint">换配色，不动布局</span>
+        <button class="btn plain" id="themeBtn" style="padding:6px 12px;font-size:12px">切到过年</button>
+      </div>
+      <div class="set-row">
+        <span class="sr-lab">打印名单</span>
+        <span class="sr-hint">带空格的记分表，手写用</span>
+        <button class="btn plain" id="printRoster" style="padding:6px 12px;font-size:12px">打印</button>
+      </div>
+      <div class="set-row">
+        <span class="sr-lab">惩罚卡</span>
+        <span class="sr-hint">自己加几张，抽卡池会带上</span>
+        <button class="btn plain" id="pcManage" style="padding:6px 12px;font-size:12px">管理</button>
+      </div>
+      <div class="set-row">
+        <span class="sr-lab">模式</span>
+        <span class="sr-hint">综艺不摆分数、换称号；比赛照旧</span>
+        <button class="btn plain" id="modeBtn" style="padding:6px 12px;font-size:12px">切到比赛</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 复盘：这一晚玩了什么、谁一直在状态里 -->
+<div class="pmask" id="reviewMask">
+  <div class="pmodal">
+    <div class="pm-head">
+      <h2>今晚复盘</h2>
+      <span class="pm-sub" id="reviewSub"></span>
+      <div class="spacer"></div>
+      <button class="pm-x" id="reviewClose" title="关闭">×</button>
+    </div>
+    <div class="pm-body col-one">
+      <div id="reviewBody"></div>
+      <div class="show-foot" style="margin-top:12px">
+        <button class="btn plain" id="reviewCsv" style="flex:1">导出 CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/net.js"></script>
+<script src="/assets/js/qrcode.js"></script>
+<script src="/assets/js/audio-public.js"></script>
+<script src="/assets/js/sfx.js"></script>
+<script src="/assets/js/voice.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  if (!NET.key && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) {
+    document.body.innerHTML =
+      '<div style="padding:60px;font:15px/1.9 system-ui;color:#e8eaf2">' +
+      '<h2>需要密钥</h2><p style="color:#8b90a6">用终端打印的、带 ?k= 的地址打开主持台。</p></div>';
+    return;
+  }
+
+  const pa = new PublicAudio();
+  const sfx = new Sfx();
+  let snap = null;
+  let addrUrl = '';
+  let selectedId = null;
+  let seekRef = null;
+  /* 正在拖的滑杆（音量那种）。拖动期间整块控件别重建，
+     否则手指按着的那根条会被换掉，值直接弹回服务端旧值 ——
+     表现就是「一次只能跳 5%，拖到 40% 松手跳回 10%」。 */
+  let rangeDrag = null;
+  // 最近一次收到的面板：拖动结束后用它补画一次，把拖动期间跳过的更新补上
+  let lastPanel = null;
+
+  /* ------------------------------------------------ 小工具 */
+
+  function toast(text) {
+    const el = $('toast');
+    el.textContent = text;
+    el.classList.add('on');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('on'), 2200);
+  }
+
+  async function send(obj) {
+    const r = await NET.post('/api/host', obj).catch(() => null);
+    if (!r) return toast('连不上服务');
+    if (r.error) toast(r.error);
+    return r;
+  }
+
+  /* 这个是往 innerHTML 里拼的，必须真转义。
+   * 之前它只是 String() 一下，玩家把名字填成 </div> 就能把左栏撑塌。
+   * 现场扫码进场自己填名字，这不是理论风险。 */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /* ------------------------------------------------ 二维码 */
+
+  async function initNet() {
+    const d = await fetch(NET.withKey('/api/net')).then((r) => r.json()).catch(() => null);
+    if (!d) return;
+    const host = d.addresses.find((a) => !a.address.startsWith('169.254')) || d.addresses[0];
+    const url = host ? `http://${host.address}:${d.port}` : location.origin;
+    $('addr').textContent = url;
+    addrUrl = url;
+    $('addr').title = url;
+    $('ssid').textContent = d.ssid ? 'Wi-Fi：' + d.ssid : '同一 Wi-Fi 下扫码';
+    if (!d.ssid) retrySsid(0);
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      $('qrBox').innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0 });
+    } catch (e) {
+      $('qrBox').textContent = url;
+    }
+  }
+
+  /* 网名要问系统，第一次请求经常还没问到（后端在等系统命令）。
+     隔几秒补问，最多三次 —— 只补一次容易正好撞在它还没好的时候。 */
+  function retrySsid(n) {
+    if (n >= 3) return;
+    setTimeout(async () => {
+      const d = await fetch(NET.withKey('/api/net')).then((r) => r.json()).catch(() => null);
+      if (d && d.ssid) $('ssid').textContent = 'Wi-Fi：' + d.ssid;
+      else retrySsid(n + 1);
+    }, n === 0 ? 2500 : 4000);
+  }
+
+  /* ------------------------------------------------ 游戏目录（下拉） */
+
+  function renderGames(games, gameId) {
+    const list = $('glist');
+    list.innerHTML = '';
+    for (const g of games) {
+      const b = document.createElement('button');
+      b.className = 'gitem' + (gameId === g.id ? ' on' : '');
+      b.innerHTML =
+        `<span class="gname">${esc(g.name)}</span>` +
+        `<span class="gdesc">${esc(g.desc || '')}</span>`;
+      b.onclick = () => {
+        closeMenu();
+        send({ cmd: 'game/select', id: g.id });
+      };
+      list.appendChild(b);
+    }
+    const cur = games.find((g) => g.id === gameId);
+    $('gbtnName').textContent = cur ? cur.name : '选择游戏';
+    $('gbtnName').classList.toggle('empty', !cur);
+  }
+
+  function openMenu() {
+    $('glist').classList.add('on');
+    $('gmenu').classList.add('open');
+  }
+  function closeMenu() {
+    $('glist').classList.remove('on');
+    $('gmenu').classList.remove('open');
+  }
+  $('gbtn').onclick = (e) => {
+    e.stopPropagation();
+    if ($('glist').classList.contains('on')) closeMenu();
+    else openMenu();
+  };
+  document.addEventListener('click', (e) => {
+    if (!$('gmenu').contains(e.target)) closeMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMenu();
+  });
+
+  /* ------------------------------------------------ 玩家（按队分组） */
+
+  function playerRow(p) {
+    const row = document.createElement('div');
+    row.className = 'pl' + (p.id === selectedId ? ' sel' : '') + (p.online ? '' : ' off');
+    const dots = document.createElement('span');
+    dots.className = 'dot' + (p.online ? '' : ' off');
+    const mid = document.createElement('div');
+    const away = p.away > 60000 ? `${Math.round(p.away / 60000)} 分钟前` : '';
+    mid.innerHTML =
+      `<div class="nm">${esc(p.name)}</div>` +
+      `<div class="sub">` +
+      (p.headset ? '' : '<span class="tag warn">无耳机</span>') +
+      (p.online && !p.awake ? '<span class="tag">可能灭屏</span>' : '') +
+      (!p.online ? `<span class="tag">离线${away ? ' · ' + away : ''}</span>` : '') +
+      (p.alive === false ? '<span class="tag">出局</span>' : '') +
+      `</div>`;
+    const sc = document.createElement('span');
+    sc.className = 'sc';
+    sc.textContent = p.score || 0;
+    row.appendChild(dots);
+    row.appendChild(mid);
+    row.appendChild(sc);
+    row.onclick = () => {
+      selectedId = selectedId === p.id ? null : p.id;
+      renderPlayers(snap.players, snap.teams);
+      paintPlActions();
+    };
+    return row;
+  }
+
+  function teamHead(key, title, score, count, extraHtml) {
+    const head = document.createElement('div');
+    head.className = 'teamhead ' + (key || 'none');
+    head.innerHTML =
+      `<span class="tname">${esc(title)}</span>` +
+      `<span class="tcount">${count}</span>` +
+      (key
+        ? `<span class="tscore" data-tm="${key}">${score}</span>` +
+          `<button class="tbtn" data-tm="${key}" data-d="-1">−1</button>` +
+          `<button class="tbtn" data-tm="${key}" data-d="1">+1</button>`
+        : extraHtml || '');
+    return head;
+  }
+
+  function renderPlayers(list, teams) {
+    const box = $('players');
+    box.innerHTML = '';
+    const groups = [
+      { key: 'A', title: (teams && teams.A && teams.A.name) || 'A 队', score: (teams && teams.A && teams.A.score) || 0 },
+      { key: 'B', title: (teams && teams.B && teams.B.name) || 'B 队', score: (teams && teams.B && teams.B.score) || 0 },
+      { key: null, title: '未分组', score: 0 },
+    ];
+    let any = false;
+    for (const g of groups) {
+      const rows = list.filter((p) => (p.team || null) === g.key);
+      if (!rows.length && g.key) continue;
+      any = true;
+      box.appendChild(teamHead(g.key, g.title, g.score, rows.length));
+      if (g.key && rows.length) {
+        const sc = box.lastChild.querySelector('.tscore');
+        sc.title = '点击直接改分';
+        sc.onclick = (e) => {
+          e.stopPropagation();
+          const v = prompt(`${g.title} 的分数`, String(sc.textContent));
+          if (v === null) return;
+          const n = Number(v);
+          if (!isFinite(n)) return toast('要填数字');
+          send({ cmd: 'team/setScore', team: g.key, score: n });
+        };
+      }
+      for (const p of rows) box.appendChild(playerRow(p));
+    }
+    if (!any) {
+      const d = document.createElement('div');
+      d.className = 'empty-tip';
+      d.textContent = '还没有人进来。把上面的玩家入口发出去。';
+      box.appendChild(d);
+    }
+    $('plCount').textContent = `(${list.length})`;
+    $('mCount').textContent = list.length;
+    $('mOnline').textContent = list.filter((x) => x.online).length;
+  }
+
+  function paintPlActions() {
+    $('plActions').style.display = selectedId ? 'flex' : 'none';
+    paintEar();
+  }
+
+  /* 耳机里放一段：不依附任何游戏，选人就能用。
+   * 三条都写死在这一处：谁在响、放哪一段、什么时候停，别让两个入口各记一套。 */
+  function paintEar() {
+    const box = $('plEar');
+    if (!box) return;
+    const p = snap && snap.players.find((x) => x.id === selectedId);
+    const w = (snap && snap.whisper) || {};
+    // 没戴耳机的人不出现这一栏：现场按下去就是全场公放
+    box.style.display = p && p.headset ? 'flex' : 'none';
+    if (!p) return;
+
+    const opts = [];
+    for (const x of (snap.sfx || [])) opts.push({ v: 'file:' + x.id, t: '音效 · ' + x.name });
+    for (const x of (snap.media || [])) opts.push({ v: 'media:' + x.id, t: '曲库 · ' + x.name });
+    const sel = $('ebSel');
+    const keep = sel.value;
+    sel.innerHTML = opts.length
+      ? opts.map((o) => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join('')
+      : '<option value="">库里还没有音频</option>';
+    if (keep && opts.some((o) => o.v === keep)) sel.value = keep;
+
+    const mine = !!(w.id && w.id === p.id);
+    $('ebPlay').style.display = mine ? 'none' : '';
+    $('ebPlay').disabled = !opts.length;
+    const stop = $('ebStop');
+    stop.style.display = mine ? '' : 'none';
+    stop.textContent = mine ? `停（${Math.ceil((w.left || 0) / 1000)}s）` : '停';
+  }
+
+  /* ------------------------------------------------ 曲目进度条
+     只有主持台能拖，拖的是全场的播放位置 —— 每台手机各拖各的，
+     好人之间也踩不到一起，这游戏就没有参照物了。 */
+
+  function clock(sec) {
+    const x = Math.max(0, Math.round(Number(sec) || 0));
+    return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`;
+  }
+
+  function seekRow(c) {
+    const wrap = document.createElement('div');
+    wrap.className = 'seeker' + (c.playing ? '' : ' off');
+
+    const head = document.createElement('div');
+    head.className = 'seek-head';
+    const lab = document.createElement('span');
+    lab.textContent = c.label || '进度';
+    const tm = document.createElement('span');
+    tm.className = 'seek-time mono';
+    head.appendChild(lab);
+    head.appendChild(tm);
+
+    const rng = document.createElement('input');
+    rng.type = 'range';
+    rng.className = 'seek-range';
+    rng.min = '0';
+    rng.max = String(Math.max(1, c.duration || 1));
+    rng.step = '0.1';
+    rng.disabled = !c.playing;
+    rng.value = String(c.offset || 0);
+
+    seekRef = {
+      wrap: wrap,
+      rng: rng,
+      tm: tm,
+      duration: c.duration || 0,
+      offset: c.offset || 0,
+      startAt: c.startAt || 0,
+      playing: !!c.playing,
+      dragging: false,
+    };
+
+    rng.addEventListener('input', () => {
+      seekRef.dragging = true;
+      tm.textContent = `${clock(Number(rng.value))} / ${clock(seekRef.duration)}`;
+    });
+    rng.addEventListener('change', () => {
+      const sec = Number(rng.value);
+      seekRef.dragging = false;
+      send({ cmd: 'game/act', action: c.action || 'host_seek', sec: sec });
+    });
+
+    wrap.appendChild(head);
+    wrap.appendChild(rng);
+    paintSeek();
+    return wrap;
+  }
+
+  function paintSeek() {
+    const st = seekRef;
+    if (!st || !document.body.contains(st.wrap)) return;
+    let pos = st.offset;
+    if (st.playing && st.startAt) {
+      pos += Math.max(0, (NET.serverNow() - st.startAt) / 1000);
+    }
+    pos = Math.max(0, Math.min(st.duration, pos));
+    if (!st.dragging) {
+      st.tm.textContent = `${clock(pos)} / ${clock(st.duration)}`;
+      st.rng.value = String(pos);
+    }
+  }
+  setInterval(paintSeek, 200);
+
+  function renderPanel(panel) {
+    lastPanel = panel;
+    $('gName').textContent = panel.title || '未选择游戏';
+    $('gDesc').textContent = panel.desc || '';
+
+    /* 规则卡：大屏在主持人身后，他自己低头看台子。
+       两边必须是同一份字，不然念的和写的对不上。 */
+    const rc = $('rulesCard');
+    const brief = panel.brief;
+    if (brief && brief.rules && brief.rules.length) {
+      rc.style.display = 'block';
+      const ol = $('rcList');
+      ol.innerHTML = '';
+      brief.rules.forEach((t) => {
+        const li = document.createElement('li');
+        const n = document.createElement('i');
+        n.textContent = String(ol.children.length + 1);
+        const s = document.createElement('span');
+        s.textContent = t;
+        li.appendChild(n);
+        li.appendChild(s);
+        ol.appendChild(li);
+      });
+    } else {
+      rc.style.display = 'none';
+    }
+    $('rcShow').disabled = !panel.title || panel.title === '未选择游戏';
+
+    const info = $('info');
+    info.innerHTML = '';
+    for (const it of panel.info || []) {
+      const d = document.createElement('div');
+      d.className = 'it' + (it.strong ? ' strong' : '');
+      d.innerHTML = `<div class="k">${esc(it.label)}</div><div class="v">${esc(it.value)}</div>`;
+      info.appendChild(d);
+    }
+
+    const ctl = $('controls');
+    // 拖动进度条 / 音量条的时候别重建，否则手指按着的那根条会被换掉
+    const holdDrag = !!(seekRef && seekRef.dragging) || !!rangeDrag;
+    if (!holdDrag) ctl.innerHTML = '';
+    for (const c of (holdDrag ? [] : panel.controls || [])) {
+      if (c.kind === 'seek') {
+        ctl.appendChild(seekRow(c));
+      } else if (c.kind === 'range') {
+        ctl.appendChild(rangeRow(c));
+      } else if (c.kind === 'select') {
+        const wrap = document.createElement('label');
+        wrap.className = 'sel';
+        const lab = document.createElement('span');
+        lab.textContent = c.label || '';
+        const sel = document.createElement('select');
+        sel.className = 'input';
+        for (const o of c.options || []) {
+          const op = document.createElement('option');
+          op.value = o.value;
+          op.textContent = o.label;
+          if (String(o.value) === String(c.value)) op.selected = true;
+          sel.appendChild(op);
+        }
+        sel.onchange = () => {
+          const payload = { [c.name || 'value']: sel.value };
+          if (c.cmd) send(Object.assign({ cmd: c.cmd }, payload));
+          else send(Object.assign({ cmd: 'game/act', action: c.action }, payload));
+        };
+        wrap.appendChild(lab);
+        wrap.appendChild(sel);
+        ctl.appendChild(wrap);
+      } else if (c.kind === 'num') {
+        /* B1：主持人在台上替玩家报数。
+         * 做成「输入框 + 报」而不是一串数字键盘，是因为报数是说话，不是点选。 */
+        const wrap = document.createElement('label');
+        wrap.className = 'sel';
+        const lab = document.createElement('span');
+        lab.textContent = c.label || '报一个';
+        const inp = document.createElement('input');
+        inp.className = 'input';
+        inp.type = 'number';
+        inp.min = String(c.min != null ? c.min : '');
+        inp.max = String(c.max != null ? c.max : '');
+        inp.placeholder = c.placeholder || '';
+        inp.style.width = '96px';
+        const go = () => {
+          const v = Number(inp.value);
+          if (!Number.isFinite(v)) return toast('先写一个数');
+          const payload = {};
+          payload[c.name || 'n'] = v;
+          send({ cmd: 'game/act', action: c.action, payload });
+          inp.value = '';
+        };
+        const btn = document.createElement('button');
+        btn.className = 'btn primary';
+        btn.textContent = c.cta || '报';
+        btn.onclick = go;
+        inp.onkeydown = (e) => { if (e.key === 'Enter') go(); };
+        wrap.appendChild(lab);
+        wrap.appendChild(inp);
+        wrap.appendChild(btn);
+        ctl.appendChild(wrap);
+      } else if (c.kind === 'sfxPick') {
+        ctl.appendChild(sfxPickRow(c));
+      } else {
+        const b = document.createElement('button');
+        b.className = 'btn ' + (c.style || 'plain');
+        b.textContent = c.label;
+        // 条件不满足的按钮直接按灰，并把原因挂在 title 上 ——
+        // 现场点一下才弹「还没有音效」比一开始就看出来要慢
+        if (c.disabled) {
+          b.disabled = true;
+          b.title = c.why || '';
+        }
+        b.onclick = () => {
+          if (c.target && !selectedId) return toast('先在左边点一个玩家');
+          let body;
+          if (c.cmd) body = Object.assign({ cmd: c.cmd }, c.payload || {});
+          else
+            body = Object.assign({ cmd: 'game/act', action: c.action }, c.payload || {});
+          if (c.target) body.targetId = selectedId;
+          send(body);
+        };
+        ctl.appendChild(b);
+      }
+    }
+
+    const tbox = $('tableBox');
+    tbox.innerHTML = '';
+    if (panel.table && panel.table.rows && panel.table.rows.length) {
+      const table = document.createElement('table');
+      table.className = 'grid';
+      const thead = document.createElement('thead');
+      const tr = document.createElement('tr');
+      for (const c of panel.table.columns) {
+        const th = document.createElement('th');
+        th.textContent = c;
+        tr.appendChild(th);
+      }
+      thead.appendChild(tr);
+      table.appendChild(thead);
+      const tb = document.createElement('tbody');
+      for (const row of panel.table.rows) {
+        const r = document.createElement('tr');
+        for (const cell of row) {
+          const td = document.createElement('td');
+          td.textContent = cell;
+          r.appendChild(td);
+        }
+        tb.appendChild(r);
+      }
+      table.appendChild(tb);
+      tbox.appendChild(table);
+    }
+  }
+
+  /* 音效选择：一栏方块，铺开摆。
+     不做下拉是因为现场要「换一个、再放」，点一下比展开菜单快。
+     以前是「内置合成 / 我上传的」两栏，R4 把合成音全删了，
+     剩下那一栏真东西没必要再套一个分组头 —— 每个方块自带
+     「我的 / 曲库」前缀，一眼能看出是哪来的。 */
+  function sfxPickRow(c) {
+    const box = document.createElement('div');
+    box.className = 'sfxpick';
+    const items = [].concat(c.builtin || [], c.custom || []);
+    const h = document.createElement('div');
+    h.className = 'sp-title';
+    h.textContent = (c.title || '音效') + (items.length ? ` · ${items.length} 个` : '');
+    box.appendChild(h);
+    const pick = (v) => {
+      const payload = { [c.name || 'sound']: v };
+      if (c.cmd) send(Object.assign({ cmd: c.cmd }, payload));
+      else send(Object.assign({ cmd: 'game/act', action: c.action }, payload));
+    };
+    const chips = document.createElement('div');
+    chips.className = 'sp-chips';
+    if (!items.length) {
+      const e = document.createElement('span');
+      e.className = 'sp-empty';
+      e.textContent = c.empty || '无';
+      chips.appendChild(e);
+    }
+    for (const it of items) {
+      const b = document.createElement('button');
+      b.className = 'chip' + (String(it.value) === String(c.value) ? ' on' : '');
+      b.textContent = it.label;
+      b.title = it.label;
+      b.onclick = () => pick(it.value);
+      chips.appendChild(b);
+    }
+    box.appendChild(chips);
+    return box;
+  }
+
+  /* 滑杆控件：音量这类要边拖边变的，用 select 太笨 */
+  function rangeRow(c) {
+    const wrap = document.createElement('label');
+    wrap.className = 'sel rng';
+    const lab = document.createElement('span');
+    lab.textContent = c.label || '';
+    const rng = document.createElement('input');
+    rng.type = 'range';
+    rng.min = String(c.min == null ? 0 : c.min);
+    rng.max = String(c.max == null ? 100 : c.max);
+    rng.step = String(c.step || 1);
+    rng.value = String(c.value == null ? 0 : c.value);
+    rng.style.flex = '1';
+    const val = document.createElement('span');
+    val.className = 'mono';
+    val.style.minWidth = '34px';
+    val.style.textAlign = 'right';
+    const paint = () => {
+      val.textContent = rng.value + (c.suffix || '');
+    };
+    paint();
+    let t = null;
+    const commit = () => {
+      const payload = { [c.name || 'value']: Number(rng.value) };
+      if (c.cmd) send(Object.assign({ cmd: c.cmd }, payload));
+      else send(Object.assign({ cmd: 'game/act', action: c.action }, payload));
+    };
+    // 按下就算开始拖 —— 这时候任何重绘都得让路
+    const grab = () => {
+      rangeDrag = c;
+    };
+    const release = () => {
+      if (rangeDrag !== c) return;
+      // 松手时把最后一跳立刻发出去（节流的那个可能还没到点），
+      // 服务端收到就会 push 一次新值回来，下面的补画才拿得到正确数字
+      clearTimeout(t);
+      commit();
+      setTimeout(() => {
+        rangeDrag = null;
+        if (lastPanel) renderPanel(lastPanel);
+      }, 320);
+    };
+    rng.addEventListener('pointerdown', grab);
+    rng.addEventListener('pointerup', release);
+    rng.addEventListener('pointercancel', release);
+    rng.addEventListener('change', release);
+    rng.oninput = () => {
+      rangeDrag = c;
+      paint();
+      // 边拖边发，但要节流，别把服务打满
+      clearTimeout(t);
+      t = setTimeout(commit, 120);
+    };
+    wrap.appendChild(lab);
+    wrap.appendChild(rng);
+    wrap.appendChild(val);
+    return wrap;
+  }
+
+  function renderLog(log) {
+    const box = $('logLines');
+    box.innerHTML = '';
+    for (const e of log.slice(-40).reverse()) {
+      const d = document.createElement('div');
+      const t = new Date(e.at);
+      const hh = String(t.getHours()).padStart(2, '0');
+      const mm = String(t.getMinutes()).padStart(2, '0');
+      const ss = String(t.getSeconds()).padStart(2, '0');
+      d.innerHTML = `<time>${hh}:${mm}:${ss}</time>${esc(e.text)}`;
+      box.appendChild(d);
+    }
+  }
+
+  /* A1 素材库：两个分区共用一块面板，省一整个入口 */
+  function matTab(which) {
+    const audio = which !== 'packs';
+    $('matAudio').classList.toggle('on', audio);
+    $('matPacks').classList.toggle('on', !audio);
+    $('matAudioBox').style.display = audio ? '' : 'none';
+    $('matPacksBox').style.display = audio ? 'none' : '';
+  }
+  $('matAudio').onclick = () => matTab('audio');
+  $('matPacks').onclick = () => matTab('packs');
+
+  function renderPacksMini(m) {
+    const box = $('pkMini');
+    box.innerHTML = '';
+    for (const p of m.packs || []) {
+      const row = document.createElement('div');
+      row.className = 'pk-row';
+      const n = document.createElement('b');
+      n.textContent = p.name;
+      const c = document.createElement('span');
+      c.textContent = `${p.count} 条${p.custom ? ' · 自建' : ''}`;
+      row.appendChild(n);
+      row.appendChild(c);
+      box.appendChild(row);
+    }
+  }
+
+  let delArmed = 0;
+  $('btnDelTrack').onclick = async () => {
+    const id = $('trackSel').value;
+    if (!id || id === 'synth') return toast('没有选中可删的曲目');
+    if (Date.now() - delArmed > 3000) {
+      delArmed = Date.now();
+      $('btnDelTrack').textContent = '确认删';
+      setTimeout(() => { $('btnDelTrack').textContent = '删'; }, 3200);
+      return;
+    }
+    delArmed = 0;
+    $('btnDelTrack').textContent = '删';
+    const r = await fetch('/api/media/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    }).then((x) => x.json()).catch(() => null);
+    if (!r || r.error) return toast((r && r.error) || '删不掉');
+    toast('删掉了');
+  };
+
+  function renderTracks(media, track) {
+    const sel = $('trackSel');
+    const keep = sel.value;
+    sel.innerHTML = '';
+    /* A1：内置节拍不再是一个「可选项」。
+     * 只有它真的在用（没传过歌，或者刚删掉正在播的那首）才显示这一行，
+     * 否则下拉框里没有 synth 这个值，会变成一个空白框。 */
+    const onSynth = !track || track.kind !== 'file';
+    if (onSynth) {
+      const o = document.createElement('option');
+      o.value = 'synth';
+      o.textContent = media.length ? '内置节拍（兜底，选下面的歌切换）' : '还没有音频（暂用内置节拍兜底）';
+      sel.appendChild(o);
+    }
+    for (const m of media) {
+      const o = document.createElement('option');
+      o.value = m.id;
+      o.textContent = m.name;
+      sel.appendChild(o);
+    }
+    sel.value = track && track.kind === 'file' ? track.id : 'synth';
+    $('trackName').innerHTML =
+      track && track.kind === 'file'
+        ? `正在用：<span>${esc(track.name)}</span>`
+        : `正在用：<span>内置节拍</span>${media.length ? '（兜底，选中上面任一首切换）' : ''}`;
+    $('btnDelTrack').disabled = !(track && track.kind === 'file');
+  }
+
+  /* ------------------------------------------------ 计时 */
+
+  let timerState = null;
+  setInterval(() => {
+    const el = $('timer');
+    if (!timerState || !timerState.endsAt) {
+      el.textContent = '';
+      return;
+    }
+    const left = Math.max(0, timerState.endsAt - NET.serverNow());
+    const s = Math.ceil(left / 1000);
+    el.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    el.style.color = left < 10000 ? '#ef5b5b' : left < 30000 ? '#f5b942' : '#8b90a6';
+  }, 200);
+
+  /* ------------------------------------------------ 地址复制 / 更多菜单 */
+
+  $('btnCopyAddr').onclick = async () => {
+    if (!addrUrl) return toast('还没拿到地址');
+    try {
+      await navigator.clipboard.writeText(addrUrl);
+      toast('玩家入口地址已复制');
+    } catch (e) {
+      // 没有剪贴板权限（局域网 http 下很常见）：退回选中文本，让人自己按 Ctrl+C
+      try {
+        const r = document.createRange();
+        r.selectNodeContents($('addr'));
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(r);
+        toast('已选中，按 Ctrl+C 复制');
+      } catch (e2) {
+        toast(addrUrl);
+      }
+    }
+  };
+
+  /* ---------------------------------------------- P0 裁决台 */
+  let judgeTap = false;
+
+  function renderJudge(m) {
+    const j = m.judge || { on: false };
+    $('judgeBar').style.display = j.on ? '' : 'none';
+    $('judgeBtn').classList.toggle('on', !!j.on);
+    if (!j.on) return;
+    $('judgeLabel').textContent = j.label || '裁决';
+    const box = $('judgeChips');
+    box.innerHTML = '';
+    for (const p of (m.players || []).filter((x) => x.alive !== false)) {
+      const b = document.createElement('button');
+      b.className = 'j-chip' + (j.sel === p.id ? ' sel' : '');
+      b.textContent = p.name;
+      b.onclick = () => {
+        if (judgeTap) send({ cmd: 'player/tap', pid: p.id });
+        else send({ cmd: 'judge/select', pid: p.id });
+      };
+      box.appendChild(b);
+    }
+  }
+
+  $('judgeBtn').onclick = () => {
+    if (snap && snap.judge && snap.judge.on) send({ cmd: 'judge/close' });
+    else send({ cmd: 'judge/open', label: (snap && snap.panel && snap.panel.title) || '本局' });
+  };
+  $('judgeOk').onclick = () => {
+    const sel = snap && snap.judge && snap.judge.sel;
+    if (!sel) return toast('先点一个名字');
+    send({ cmd: 'judge/pick', pid: sel, ok: true });
+  };
+  $('judgeNo').onclick = () => {
+    const sel = snap && snap.judge && snap.judge.sel;
+    if (!sel) return toast('先点一个名字');
+    send({ cmd: 'judge/pick', pid: sel, ok: false });
+  };
+  $('judgeNext').onclick = () => send({ cmd: 'judge/next' });
+  $('judgeEnd').onclick = () => send({ cmd: 'judge/close' });
+  $('judgeTapBtn').onclick = () => {
+    judgeTap = !judgeTap;
+    $('judgeTapBtn').classList.toggle('on', judgeTap);
+    toast(judgeTap ? '打点模式：点名字记一次参与' : '打点模式关');
+  };
+
+  /* ---------------------------------------------- H4 手机遥控 */
+  let remoteUrlFull = '';
+  function paintRemote(code) {
+    $('remoteCode').textContent = code || '------';
+    if (!code) return;
+    // 用不带密钥的局域网地址：带 ?k= 的地址是主持台的钥匙，不能给手机
+    remoteUrlFull = (addrUrl || location.origin) + '/remote?code=' + code;
+    $('remoteUrl').textContent = remoteUrlFull.replace('http://', '');
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData(remoteUrlFull);
+      qr.make();
+      $('remoteQrBox').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0 });
+    } catch (e) {
+      $('remoteQrBox').textContent = remoteUrlFull;
+    }
+  }
+
+  async function ensureRemoteCode() {
+    let code = (snap && snap.remoteCode) || '';
+    if (!code) {
+      const r = await send({ cmd: 'remote/new' });
+      code = (r && r.code) || '';
+    }
+    paintRemote(code);
+  }
+
+  $('btnRemote').onclick = async () => {
+    $('moreMenu').classList.remove('on');
+    $('remoteMask').classList.add('on');
+    await ensureRemoteCode();
+  };
+  $('remoteNew').onclick = async () => {
+    const r = await send({ cmd: 'remote/new' });
+    if (r && r.code) {
+      paintRemote(r.code);
+      toast('换了新码，旧码立刻失效');
+    }
+  };
+  $('remoteClose').onclick = $('remoteDone').onclick = () => $('remoteMask').classList.remove('on');
+
+  $('btnMore').onclick = (e) => {
+    e.stopPropagation();
+    $('moreMenu').classList.toggle('on');
+  };
+  document.addEventListener('click', () => $('moreMenu').classList.remove('on'));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') $('moreMenu').classList.remove('on');
+  });
+
+  /* ------------------------------------------------ 音频 */
+
+  function paintAud(ok) {
+    const el = $('audState');
+    el.className = 'badge ' + (ok ? 'on' : 'off');
+    el.innerHTML = '<i></i>' + (ok ? '已接通' : '未启用');
+  }
+
+  $('btnSound').onclick = async () => {
+    await pa.init();
+    await sfx.init();
+    const ok = pa.ctx && pa.ctx.state === 'running';
+    $('btnSound').textContent = ok ? '声音已启用' : '再点一次';
+    paintAud(ok);
+    toast('声音已接到这台电脑的输出');
+  };
+
+  $('trackSel').onchange = (e) => send({ cmd: 'audio/track', id: e.target.value });
+  $('btnPlay').onclick = () => {
+    const v = $('playFrom').value.trim();
+    send(v === '' ? { cmd: 'audio/play' } : { cmd: 'audio/play', fromSec: Number(v) });
+  };
+  $('btnPause').onclick = () => send({ cmd: 'audio/pause' });
+  $('btnStop').onclick = () => send({ cmd: 'audio/stop' });
+  $('bpm').oninput = (e) => {
+    $('bpmVal').textContent = e.target.value;
+  };
+  $('bpm').onchange = (e) => send({ cmd: 'audio/bpm', bpm: Number(e.target.value) });
+  $('vol').oninput = (e) => pa.setVolume(Number(e.target.value) / 100);
+
+  /* 两个上传口共用一套：拖进来 = 选文件；上传时把「第几个 / 共几个」写在方块下面。
+     以前是原生 input，深色界面里一块白，而且传完只弹一句 toast，看不出传到哪一步。 */
+  async function uploadFiles(e, listEl, url, refreshCmd, unit) {
+    const files = [...e.target.files];
+    if (!files.length) return;
+    for (let i = 0; i < files.length; i++) {
+      listEl.textContent = `上传中 ${i + 1}/${files.length} · ${files[i].name}`;
+      const r = await fetch(NET.withKey(url + encodeURIComponent(files[i].name)), {
+        method: 'POST',
+        body: files[i],
+      }).then((x) => x.json()).catch(() => null);
+      if (r && r.error) {
+        listEl.textContent = `第 ${i + 1} 个失败：${r.error}`;
+        toast(r.error);
+        e.target.value = '';
+        return;
+      }
+    }
+    listEl.textContent = `已传入${unit} ${files.length} 个`;
+    toast(`已传入${unit} ${files.length} 个`);
+    e.target.value = '';
+    send({ cmd: refreshCmd });
+  }
+
+  function wireDrop(boxId, inputId, listEl, url, refreshCmd, unit) {
+    const box = $(boxId);
+    const input = $(inputId);
+    input.onchange = (e) => uploadFiles(e, listEl, url, refreshCmd, unit);
+    for (const k of ['dragenter', 'dragover']) {
+      box.addEventListener(k, (e) => {
+        e.preventDefault();
+        box.classList.add('over');
+      });
+    }
+    for (const k of ['dragleave', 'drop']) {
+      box.addEventListener(k, (e) => {
+        e.preventDefault();
+        box.classList.remove('over');
+      });
+    }
+    box.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (!dt || !dt.files || !dt.files.length) return;
+      const bag = new DataTransfer();
+      for (const f of dt.files) bag.items.add(f);
+      input.files = bag.files;
+      input.dispatchEvent(new Event('change'));
+    });
+  }
+
+  wireDrop('dropAudio', 'upload', $('upNoteAudio'), '/api/upload?name=', 'media/refresh', '曲目');
+  wireDrop('dropSfx', 'uploadSfx', $('upNoteSfx'), '/api/upload-sfx?name=', 'sfx/refresh', '音效');
+
+  $('btnHealth').onclick = async () => {
+    const h = await fetch(NET.withKey('/api/health')).then((r) => r.json()).catch(() => null);
+    if (!h) return toast('读不到体检结果');
+    const bits = [`在线 ${h.online}/${h.players}`];
+    if (h.noHeadset.length) bits.push(`没戴耳机：${h.noHeadset.join('、')}`);
+    if (h.screenAwakeOff.length) bits.push(`可能灭屏：${h.screenAwakeOff.length} 人`);
+    if (!h.screens) bits.push('投屏没开');
+    toast(bits.join(' · '));
+  };
+
+  $('btnGroup').onclick = () => send({ cmd: 'room/group' });
+  $('btnRegroup').onclick = () => send({ cmd: 'room/group', mode: 'shuffle' });
+  $('btnUngroup').onclick = () => send({ cmd: 'room/clearTeams' });
+  $('btnPrune').onclick = () => send({ cmd: 'room/prune' });
+
+  // 规则卡：随时能重新打上屏（新来的两个人没听到规则时用）
+  $('rcShow').onclick = () => send({ cmd: 'brief/show' });
+  $('rcHide').onclick = () => send({ cmd: 'brief/hide' });
+
+  /* ------------------------------------------------ 这一晚的托底
+     自动推进 / 围观下注 / 本局结束。三块都不属于某个游戏，
+     所以画在游戏面板外面 —— 换游戏它们也不会跟着消失。
+     结算之后这一块换成三个出口。 */
+
+  const voice = new Voice();
+
+  function lbBtn(label, style, onclick, opts) {
+    const b = document.createElement('button');
+    b.className = 'btn ' + (style || 'plain') + ' lb-btn';
+    b.textContent = label;
+    b.onclick = onclick;
+    if (opts && opts.disabled) {
+      b.disabled = true;
+      b.title = opts.why || '';
+    }
+    return b;
+  }
+
+  function renderLivebar(m) {
+    const box = $('livebar');
+    box.innerHTML = '';
+
+    /* ---- 结算页：三个出口 ----
+     * 一局完了以后，主持人不该再回导航栏里找「换个游戏」。
+     * 现场最怕的就是这一段落空：大家刚笑完，你低头点了五分钟鼠标。 */
+    const st = m.settle;
+    if (st && st.on) {
+      box.className = 'livebar settle';
+      const head = document.createElement('div');
+      head.className = 'lb-head';
+      head.innerHTML =
+        `<b>${st.stage === 'board' ? '今晚收工' : '本局结束'}</b>` +
+        `<span>${esc(st.name || '')}</span>`;
+      box.appendChild(head);
+      const row = document.createElement('div');
+      row.className = 'lb-row';
+      /* 7：人数不够就灰掉「再来一局」，并写清还差几个人 ——
+       * 只灰不写，主持人会以为是程序坏了。 */
+      const meta = m.settleMeta || { canAgain: true, short: 0, need: 2, online: 0 };
+      row.appendChild(
+        lbBtn(meta.canAgain ? '同批人再来一局' : `再来一局（还差 ${meta.short} 人）`, 'primary', () => send({ cmd: 'settle/again' }), {
+          disabled: !meta.canAgain,
+          why: `需要 ${meta.need} 人在线，现在 ${meta.online} 人`,
+        })
+      );
+      row.appendChild(
+        lbBtn('换个游戏', 'plain', () => {
+          send({ cmd: 'settle/switch' });
+          openMenu();
+        })
+      );
+      row.appendChild(lbBtn('今晚收工', 'ok', () => send({ cmd: 'settle/wrap' })));
+      box.appendChild(row);
+
+      // 第二排：误点了能退回去，或者打一张记分表
+      const row2 = document.createElement('div');
+      row2.className = 'lb-row';
+      row2.appendChild(lbBtn('返回本局', 'plain', () => send({ cmd: 'settle/cancel' })));
+      row2.appendChild(lbBtn('打印名单', 'plain', () => printRoster()));
+      box.appendChild(row2);
+      return;
+    }
+
+    box.className = 'livebar';
+    const row = document.createElement('div');
+    row.className = 'lb-row';
+
+    // 自动推进：只有游戏自己声明了 pacing 才出现
+    const g = (m.games || []).find((x) => x.id === m.gameId);
+    const pacing = g && g.pacing;
+    if (pacing) {
+      const a = m.auto || {};
+      const txt = document.createElement('span');
+      txt.className = 'lb-txt';
+      txt.textContent = a.on
+        ? `自动中 · 每 ${a.sec} 秒「${a.label}」· 已点 ${a.runs || 0} 次`
+        : `可自动推进「${pacing.label}」`;
+      row.appendChild(txt);
+      if (a.on) {
+        row.appendChild(lbBtn('停自动', 'danger', () => send({ cmd: 'auto/off' })));
+      } else {
+        const sel = document.createElement('select');
+        sel.className = 'input lb-sel';
+        [15, 30, 45, 60].forEach((sec) => {
+          const o = document.createElement('option');
+          o.value = String(sec);
+          o.textContent = sec + ' 秒';
+          if (sec === (pacing.sec || 30)) o.selected = true;
+          sel.appendChild(o);
+        });
+        row.appendChild(sel);
+        row.appendChild(lbBtn('开自动', 'plain', () => send({ cmd: 'auto/on', sec: Number(sel.value) })));
+      }
+    }
+
+    // 围观下注
+    const b = m.bet || {};
+    const bt = document.createElement('span');
+    bt.className = 'lb-txt';
+    if (b.open) {
+      bt.textContent = `下注中 · ${b.n} 人押了`;
+      row.appendChild(bt);
+      row.appendChild(
+        lbBtn('结算给选中的人', 'plain', () => {
+          if (!selectedId) return toast('先在左边点一个赢家');
+          send({ cmd: 'bet/settle', id: selectedId });
+        })
+      );
+      row.appendChild(lbBtn('取消', 'plain', () => send({ cmd: 'bet/cancel' })));
+    } else if (b.settled) {
+      bt.textContent = `${b.winnerName} 赢了 · ${b.hits.length} 人押中`;
+      row.appendChild(bt);
+      row.appendChild(lbBtn('再开一轮', 'plain', () => send({ cmd: 'bet/open' })));
+      row.appendChild(lbBtn('清掉', 'plain', () => send({ cmd: 'bet/clear' })));
+    } else {
+      bt.textContent = '围观下注（没在局里的人押谁赢）';
+      row.appendChild(bt);
+      row.appendChild(lbBtn('开下注', 'plain', () => send({ cmd: 'bet/open' })));
+    }
+
+    // 本局结束：不看游戏有没有结算页，主持人说了算
+    if (m.gameId) {
+      row.appendChild(lbBtn('本局结束', 'ok', () => send({ cmd: 'settle/round' })));
+    }
+
+    box.appendChild(row);
+  }
+
+  /* ------------------------------------------------ 今晚：节目单 */
+
+  /* ------------------------------------------------ 提词器（H2）+ 音频抽屉（K1） */
+
+  let panelOpen = false;
+
+  /* S4：主持台也看得到倒计时，剩下的秒数和投屏一致（各自本地算） */
+  let voteTickHost = null;
+  function paintVoteHost(v) {
+    const el = $('votePillHost');
+    clearInterval(voteTickHost);
+    if (!v || !v.dueAt) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = '';
+    const paint = () => {
+      const left = Math.max(0, v.dueAt - Date.now());
+      if (v.expired || left <= 0) {
+        el.textContent = '投票超时 · 算弃权';
+        el.classList.add('over');
+        clearInterval(voteTickHost);
+        return;
+      }
+      el.classList.remove('over');
+      const sec = Math.ceil(left / 1000);
+      el.textContent = '投票 ' + Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+    };
+    paint();
+    voteTickHost = setInterval(paint, 500);
+  }
+
+  function renderCue(m) {
+    const c = m.cue;
+    const playing = m.phase === 'playing' && c;
+    // 换局 / 回大厅时把「展开面板」复位，下一局从提词器开始
+    if (m.phase !== 'playing') panelOpen = false;
+    // lobby 阶段提词器是空的，占着地方反而碍事：人到齐前要分组、选游戏、传音频
+    const active = !!playing && !panelOpen;
+    document.body.classList.toggle('prompting', active);
+    $('prompter').style.display = active ? '' : 'none';
+    $('btnPanel').style.display = playing ? '' : 'none';
+    $('btnPanel').textContent = panelOpen ? '收起面板' : '展开面板';
+    if (!c) return;
+    $('ppStep').textContent = c.index + 1 + ' / ' + c.total;
+    $('ppCue').textContent = c.cue;
+    $('ppSay').textContent = c.say;
+    $('ppNext').textContent = c.next ? '下一步：' + c.next : '最后一步 · 说完就结算';
+    // 兜底脚本要标出来：不然主持人以为每个游戏都写好了台词
+    $('ppSrc').textContent = c.source === 'game' ? '' : '通用脚本';
+  }
+
+  function fireFx(name, arg) {
+    send({ cmd: 'fx/fire', name, arg });
+  }
+  $('fxBar').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fx]');
+    if (!b) return;
+    fireFx(b.dataset.fx);
+  });
+  $('startGameBtn').onclick = () => send({ cmd: 'game/start' });
+  $('fxClearBtn').onclick = () => send({ cmd: 'fx/clear' });
+  /* 9：打印一张手写记分表（主持人不方便一直跑到电脑前） */
+  function printRoster() {
+    const ps = (snap && snap.players) || [];
+    const name = (snap && snap.panel && snap.panel.title) || '今晚';
+    const rows = ps.map((p, i) => `<tr><td>${i + 1}</td><td>${p.name}</td>${'<td></td>'.repeat(10)}<td></td></tr>`).join('');
+    const head = '<tr><th>#</th><th>名字</th>' + Array.from({ length: 10 }, (_, i) => `<th>${i + 1}</th>`).join('') + '<th>备注</th></tr>';
+    const w = window.open('', '_blank');
+    if (!w) return toast('浏览器拦了新窗口，允许一下再试');
+    w.document.write(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>记分表 · ${name}</title>
+      <style>
+        body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;padding:18px;color:#111}
+        h1{font-size:18px;margin:0 0 4px} .sub{font-size:12px;color:#555;margin-bottom:10px}
+        table{border-collapse:collapse;width:100%} th,td{border:1px solid #333;padding:7px 6px;font-size:13px;text-align:center}
+        th{background:#f2f2f2} td:nth-child(2){text-align:left;width:110px}
+        @page{size:A4 landscape;margin:12mm}
+      </style></head><body>
+      <h1>${name} · 记分表</h1>
+      <div class="sub">日期：${new Date().toLocaleDateString('zh-CN')}　人数：${ps.length}　（每格写一轮的分，最后合计）</div>
+      <table>${head}${rows}</table>
+      </body></html>`);
+    w.document.close();
+    setTimeout(() => w.print(), 300);
+  }
+  $('printRoster').onclick = () => printRoster();
+
+  /* A2 惩罚卡管理 */
+  function renderPcList() {
+    const box = $('pcList');
+    box.innerHTML = '';
+    const list = (snap && snap.punishCustom) || [];
+    if (!list.length) {
+      box.appendChild(Object.assign(document.createElement('div'), {
+        className: 'tiny muted',
+        textContent: '还没有自定义卡。内置 12 张一直在。',
+      }));
+      return;
+    }
+    for (const c of list) {
+      const row = document.createElement('div');
+      row.className = 'pc-row';
+      const t = document.createElement('b');
+      t.textContent = c.title;
+      const d = document.createElement('span');
+      d.textContent = c.body;
+      const del = document.createElement('button');
+      del.className = 'btn plain tiny';
+      del.textContent = '删';
+      del.onclick = () => send({ cmd: 'punish/del', id: c.id });
+      row.appendChild(t);
+      row.appendChild(d);
+      row.appendChild(del);
+      box.appendChild(row);
+    }
+  }
+  $('pcManage').onclick = () => {
+    $('showMask').classList.remove('on');
+    $('pcMask').classList.add('on');
+    renderPcList();
+  };
+  $('pcClose').onclick = () => $('pcMask').classList.remove('on');
+  $('pcAdd').onclick = async () => {
+    const title = $('pcTitle').value.trim();
+    const body = $('pcBody').value.trim();
+    if (!title || !body) return toast('标题和说法都要填');
+    const r = await send({
+      cmd: 'punish/add',
+      title,
+      body,
+      bar: $('pcBar').value.trim(),
+      sec: Number($('pcSec').value) || 8,
+    });
+    if (r && !r.error) {
+      $('pcTitle').value = '';
+      $('pcBody').value = '';
+      $('pcBar').value = '';
+      toast('加上了');
+      renderPcList();
+    }
+  };
+
+  $('punishBtn').onclick = () => send({ cmd: 'punish/draw' });
+  $('punishModeBtn').onclick = () => {
+    const next = (snap && snap.punishMode === 'bar') ? 'clean' : 'bar';
+    send({ cmd: 'punish/mode', mode: next });
+  };
+
+  /* 7.2 名场面：记一句，回车间隙顺手就写了 */
+  $('momentBtn').onclick = () => {
+    $('momentMask').classList.add('on');
+    $('momentText').value = '';
+    $('momentText').focus();
+  };
+  const closeMoment = () => $('momentMask').classList.remove('on');
+  $('momentClose').onclick = $('momentCancel').onclick = closeMoment;
+  $('momentSave').onclick = async () => {
+    const t = $('momentText').value.trim();
+    if (!t) return toast('先写一句');
+    const r = await send({ cmd: 'moment/add', text: t });
+    if (!r || !r.error) {
+      closeMoment();
+      toast('记下了');
+    }
+  };
+  $('momentText').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('momentSave').click();
+  });
+  $('fxBig').onclick = () => {
+    const t = $('fxText').value.trim();
+    if (!t) return toast('先写一句要推的话');
+    fireFx('bigtext', t);
+    $('fxText').value = '';
+  };
+  $('fxText').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('fxBig').click();
+  });
+
+  $('ppDone').onclick = () => send({ cmd: 'cue/next' });
+  $('ppSkip').onclick = () => send({ cmd: 'cue/skip' });
+  $('ppAgain').onclick = async () => {
+    const r = await send({ cmd: 'cue/again' });
+    if (r && r.say) toast(r.cue + '：' + r.say);
+  };
+  $('btnPanel').onclick = () => {
+    panelOpen = !panelOpen;
+    if (snap) {
+      renderCue(snap);
+      // 展开时把原来的面板内容补上，不然是一片空白
+      if (panelOpen) {
+        renderPanel(snap.panel);
+        renderLivebar(snap);
+        renderLog(snap.log);
+      }
+    }
+  };
+
+  function paintAudioBtn() {
+    $('btnAudio').textContent = document.body.classList.contains('audio-off') ? '侧栏 ▸' : '侧栏 ◂';
+  }
+  $('btnAudio').onclick = () => {
+    document.body.classList.toggle('audio-off');
+    paintAudioBtn();
+  };
+  paintAudioBtn();
+
+  function renderShow(m) {
+    const s = m.show || { id: 'free', name: '自由模式', items: [], index: -1, total: 0 };
+    $('showSub').textContent = s.note || '';
+
+    const tabs = $('showTabs');
+    tabs.innerHTML = '';
+    for (const t of m.showTemplates || []) {
+      const b = document.createElement('button');
+      b.className = 'show-tab' + (t.id === s.id ? ' on' : '');
+      b.textContent = t.name;
+      b.title = t.note || '';
+      b.onclick = async () => {
+        const r = await send({ cmd: 'show/load', id: t.id });
+        // 人数不够、有人没戴耳机：选模板的这一刻就说，不等开局才报错
+        if (r && r.warn && r.warn.length) toast(r.warn.join('；'));
+      };
+      tabs.appendChild(b);
+    }
+
+    const wbox = $('showWarn');
+    const warns = s.warn || [];
+    wbox.style.display = warns.length ? '' : 'none';
+    wbox.textContent = warns.length ? '⚠ ' + warns.join('；') : '';
+
+    const list = $('showList');
+    list.innerHTML = '';
+    if (!s.items.length) {
+      const d = document.createElement('div');
+      d.className = 'empty-tip';
+      d.textContent = '现在是自由模式：直接在上面的游戏菜单里选。想排单就点上面那三个模板。';
+      list.appendChild(d);
+    } else {
+      s.items.forEach((it, i) => {
+        const row = document.createElement('div');
+        row.className = 'show-item' + (it.on ? ' on' : '') + (it.done ? ' done' : '');
+        const n = document.createElement('span');
+        n.className = 'si-n';
+        n.textContent = String(i + 1);
+        const l = document.createElement('span');
+        l.className = 'si-l';
+        l.textContent = it.label;
+        const g = document.createElement('span');
+        g.className = 'si-g';
+        const hit = (m.games || []).find((x) => x.id === it.gameId);
+        g.textContent = hit
+          ? hit.name
+          : it.kind === 'penalty'
+          ? '惩罚'
+          : it.kind === 'whisper'
+          ? '工具 · 耳机里放'
+          : '收尾';
+        if (it.tip) row.title = it.tip;
+        row.appendChild(n);
+        row.appendChild(l);
+        row.appendChild(g);
+        list.appendChild(row);
+      });
+    }
+    $('showNextBtn').disabled = !s.items.length;
+  }
+
+  $('showNextBtn').onclick = () => send({ cmd: 'show/next' });
+
+  /* --------------------------------------------- 今晚：语音与皮肤 */
+
+  function paintVoice(m) {
+    const on = !!m.voice;
+    voice.set(on);
+    $('voiceBtn').textContent = on ? '开' : '关';
+    $('voiceBtn').className = 'btn ' + (on ? 'ok' : 'plain');
+    $('voiceHint').textContent = voice.supported()
+      ? '时间到 / 本局结束，从这台电脑出声'
+      : '这台机器的浏览器不支持语音播报';
+  }
+
+  $('voiceBtn').onclick = () => {
+    // 必须在点击里 prime 一次：Chrome 会拦住没有用户手势的语音
+    voice.prime();
+    send({ cmd: 'voice/set', on: !(snap && snap.voice) });
+  };
+  $('voiceTest').onclick = () => {
+    voice.prime();
+    voice.set(true);
+    voice.say('时间到，请停手');
+    toast('如果没听见，说明这台机器没装中文音色');
+  };
+
+  $('modeBtn').onclick = () => {
+    const next = (snap && snap.mode === 'match') ? 'variety' : 'match';
+    send({ cmd: 'mode/set', name: next });
+  };
+
+  $('themeBtn').onclick = () => {
+    send({ cmd: 'theme/set', name: snap && snap.theme === 'festive' ? 'night' : 'festive' });
+  };
+
+  /* ------------------------------------------------ 复盘弹层 */
+
+  $('btnShow').onclick = () => {
+    $('showMask').classList.add('on');
+    if (snap) renderShow(snap);
+  };
+  $('showClose').onclick = () => $('showMask').classList.remove('on');
+  $('showMask').onclick = (e) => {
+    if (e.target === $('showMask')) $('showMask').classList.remove('on');
+  };
+
+  $('btnReview').onclick = openReview;
+  $('reviewClose').onclick = () => $('reviewMask').classList.remove('on');
+  $('reviewMask').onclick = (e) => {
+    if (e.target === $('reviewMask')) $('reviewMask').classList.remove('on');
+  };
+
+  async function openReview() {
+    $('reviewMask').classList.add('on');
+    const r = await send({ cmd: 'review/get' });
+    if (!r || r.error) return;
+    renderReview(r);
+  }
+
+  function hhmm(ts) {
+    const t = new Date(ts);
+    return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function renderReview(r) {
+    const mins = Math.round((r.totalMs || 0) / 60000);
+    $('reviewSub').textContent = r.count ? `${r.count} 局 · ${mins} 分钟` : '还没有记录';
+    const box = $('reviewBody');
+    box.innerHTML = '';
+
+    if (!r.count) {
+      const d = document.createElement('div');
+      d.className = 'empty-tip';
+      d.textContent = '还没有打完的局。点一次「本局结束」就会记一局，散场后就能看。';
+      box.appendChild(d);
+      $('reviewCsv').disabled = true;
+      return;
+    }
+    $('reviewCsv').disabled = false;
+
+    /* 每局一张卡：时间、时长、前三名条形。
+     * 条形长度按「本局最高分」算，不按全局最高 —— 一局 3 分和一局 30 分
+     * 摆在一起，按全局算的话小局全是一条线，看不出谁赢。 */
+    for (const g of r.games.slice().reverse()) {
+      const card = document.createElement('div');
+      card.className = 'rv-card';
+      const hd = document.createElement('div');
+      hd.className = 'rv-h';
+      hd.innerHTML = `<b>${esc(g.name || '未命名')}</b><span>${hhmm(g.at)} · ${g.mins} 分钟 · ${g.plays} 人</span>`;
+      card.appendChild(hd);
+
+      const top = g.top || [];
+      const max = Math.max(1, ...top.map((p) => p.score));
+      top.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'rv-row';
+        const n = document.createElement('span');
+        n.className = 'rv-n';
+        n.textContent = String(i + 1);
+        const nm = document.createElement('span');
+        nm.className = 'rv-name';
+        nm.textContent = p.name;
+        const bar = document.createElement('i');
+        bar.style.width = Math.max(6, Math.round((p.score / max) * 100)) + '%';
+        const v = document.createElement('span');
+        v.className = 'rv-v';
+        v.textContent = String(p.score);
+        row.appendChild(n);
+        row.appendChild(nm);
+        row.appendChild(bar);
+        row.appendChild(v);
+        card.appendChild(row);
+      });
+      box.appendChild(card);
+    }
+
+    // 谁一直在状态里：看「出场局数 + 平均动作次数」，不看总分
+    const ph = document.createElement('div');
+    ph.className = 'rv-ph';
+    ph.textContent = '参与度';
+    box.appendChild(ph);
+    for (const p of r.people) {
+      const row = document.createElement('div');
+      row.className = 'rv-p';
+      row.innerHTML =
+        `<span class="rv-name">${esc(p.name)}</span>` +
+        `<span class="rv-k">${p.plays} 局</span>` +
+        `<span class="rv-k">均 ${p.avgAct} 次动作</span>` +
+        `<span class="rv-v">${p.score}</span>`;
+      box.appendChild(row);
+    }
+  }
+
+  $('reviewCsv').onclick = async () => {
+    const r = await send({ cmd: 'review/csv' });
+    if (!r || r.error || !r.csv) return;
+    // 开头补 BOM，否则 Excel 打开是乱码
+    const blob = new Blob(['\ufeff' + r.csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'party-box-复盘.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    $('showMask').classList.remove('on');
+    $('reviewMask').classList.remove('on');
+  });
+
+
+  $('btnReset').onclick = () => {
+    if (confirm('整场重置？比分会清零。')) send({ cmd: 'room/reset' });
+  };
+
+  $('btnKickAll').onclick = () => {
+    if (confirm('清空所有玩家？所有人都要重新扫码进来。')) send({ cmd: 'room/kickAll' });
+  };
+
+  /* ------------------------------------------------ 词库
+   * 加了词要立刻能用：服务端每次写完都会 push 一次，
+   * 游戏里那个「词库（42）」会跟着变，不用重开一局。 */
+
+  let packIndex = [];   // 词库清单（只有名字和条数）
+  let packCur = null;   // 当前词库的完整内容（含每一条是不是自己加的）
+  let packFind = '';
+
+  function itemKey(it) {
+    if (it.a != null && it.b != null) return it.a + '|' + it.b;
+    return String(it.w != null ? it.w : it.q != null ? it.q : '');
+  }
+
+  function itemLabel(it) {
+    if (it.a != null && it.b != null) return it.a + ' / ' + it.b;
+    return String(it.w != null ? it.w : it.q != null ? it.q : '');
+  }
+
+  function packOpen() {
+    $('packMask').classList.add('on');
+    loadPackList();
+  }
+
+  function packCloseIt() {
+    $('packMask').classList.remove('on');
+  }
+
+  async function loadPackList(keepId) {
+    const r = await send({ cmd: 'pack/list' });
+    if (!r || !r.packs) return;
+    packIndex = r.packs;
+    let id = keepId || (packCur && packCur.id) || (packIndex[0] && packIndex[0].id);
+    if (!packIndex.some((p) => p.id === id)) id = packIndex[0] && packIndex[0].id;
+    if (!id) return;
+    await loadPackDetail(id);
+  }
+
+  async function loadPackDetail(id) {
+    const r = await send({ cmd: 'pack/detail', id });
+    if (!r || r.error || !Array.isArray(r.items)) return;
+    packCur = r;
+    packFind = '';
+    $('packFind').value = '';
+    renderPackList();
+    renderPackForm();
+    renderPackWords();
+
+    const bits = [`${r.total} 条`];
+    if (r.ownCount) bits.push(`你加了 ${r.ownCount}`);
+    if (r.hiddenCount) bits.push(`你移掉 ${r.hiddenCount}`);
+    bits.push(r.custom ? '自己建的' : '内置');
+    $('packSub').textContent = bits.join(' · ');
+    $('packDel').disabled = !r.custom;
+    $('packDel').title = r.custom ? '' : '内置词库不能删，只能「恢复默认」';
+  }
+
+  function renderPackList() {
+    const box = $('packList');
+    box.innerHTML = '';
+    const groups = [
+      ['内置', packIndex.filter((p) => !p.custom)],
+      ['我建的', packIndex.filter((p) => p.custom)],
+    ];
+    for (const [label, arr] of groups) {
+      if (!arr.length) continue;
+      const h = document.createElement('div');
+      h.className = 'pm-group';
+      h.textContent = label;
+      box.appendChild(h);
+      for (const p of arr) {
+        const b = document.createElement('button');
+        b.className = 'pw' + (packCur && p.id === packCur.id ? ' on' : '');
+        b.dataset.id = p.id;
+        if (p.custom) {
+          const d = document.createElement('i');
+          d.className = 'pw-dot';
+          b.appendChild(d);
+        }
+        const n = document.createElement('span');
+        n.className = 'pw-n';
+        n.textContent = p.name;
+        const c = document.createElement('span');
+        c.className = 'pw-c';
+        c.textContent = String(p.count);
+        b.appendChild(n);
+        b.appendChild(c);
+        b.onclick = () => loadPackDetail(p.id);
+        box.appendChild(b);
+      }
+    }
+  }
+
+  /* 三种词条的字段完全不一样：混在一个输入框里做不对，
+     所以这里按当前词库的类型现画。 */
+  function renderPackForm() {
+    const box = $('packForm');
+    box.innerHTML = '';
+    const type = packCur.type;
+
+    const mk = (label, name, ph, max) => {
+      const row = document.createElement('div');
+      row.className = 'pf-row';
+      const l = document.createElement('span');
+      l.className = 'pf-lab';
+      l.textContent = label;
+      const i = document.createElement('input');
+      i.className = 'input';
+      i.id = 'pf_' + name;
+      i.placeholder = ph;
+      i.maxLength = max;
+      i.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          doAddItem();
+        }
+      };
+      row.appendChild(l);
+      row.appendChild(i);
+      box.appendChild(row);
+      return i;
+    };
+
+    if (type === 'pair') {
+      mk('词 A', 'a', '大多数人拿到的词', 20);
+      mk('词 B', 'b', '卧底拿到的近义词', 20);
+    } else if (type === 'question') {
+      mk('问题', 'q', '比如：谁最像卧底？', 60);
+    } else {
+      mk('词', 'w', '比如：打草惊蛇', 20);
+      mk('提示', 'hint', '给画的人一点提示，可以空着', 30);
+    }
+
+    const row = document.createElement('div');
+    row.className = 'pf-row';
+    const btn = document.createElement('button');
+    btn.className = 'btn primary';
+    btn.id = 'pf_add';
+    btn.style.marginLeft = 'auto';
+    btn.textContent = '加进词库';
+    btn.onclick = doAddItem;
+    row.appendChild(btn);
+    box.appendChild(row);
+
+    const hint = document.createElement('div');
+    hint.className = 'pf-hint';
+    const lim = packCur.limits || {};
+    hint.innerHTML =
+      '回车就能加，可以连着录。' +
+      (type === 'pair' ? '两个词不能一样，不然卧底一眼就露了。' : '') +
+      `上限 <b>${lim.word || 20}</b> 字、一个词库 <b>${lim.items || 500}</b> 条。`;
+    box.appendChild(hint);
+  }
+
+  async function doAddItem() {
+    if (!packCur) return;
+    const g = (n) => {
+      const el = $('pf_' + n);
+      return el ? el.value : '';
+    };
+    const body = { cmd: 'pack/item/add', id: packCur.id };
+    if (packCur.type === 'pair') {
+      body.a = g('a');
+      body.b = g('b');
+    } else if (packCur.type === 'question') {
+      body.q = g('q');
+    } else {
+      body.w = g('w');
+      body.hint = g('hint');
+    }
+
+    const r = await send(body);
+    if (!r || r.error) return; // send 里已经提示过原因了
+
+    const next =
+      packCur.type === 'pair' ? ['a', 'b'] : packCur.type === 'question' ? ['q'] : ['w', 'hint'];
+    for (const n of next) {
+      const el = $('pf_' + n);
+      if (el) el.value = '';
+    }
+    await loadPackList(packCur.id);
+    // 焦点必须放在重绘之后：renderPackForm 会把整块表单重建一遍，
+    // 先 focus 再重绘的话焦点等于没设，连着录就得每加一条点一次输入框
+    const first = $('pf_' + next[0]);
+    if (first) first.focus();
+    toast('已加进去');
+  }
+
+  async function doRemoveItem(key, row) {
+    if (row) row.classList.add('dim');
+    const r = await send({ cmd: 'pack/item/remove', id: packCur.id, key });
+    if (!r || r.error) {
+      if (row) row.classList.remove('dim');
+      return;
+    }
+    const wasBuiltin = !!r.removedBuiltin;
+    await loadPackList(packCur.id);
+    toast(wasBuiltin ? '从内置词库移除了，点「恢复默认」能拿回来' : '删掉了');
+  }
+
+  function renderPackWords() {
+    const box = $('packWords');
+    box.innerHTML = '';
+    if (!packCur) return;
+    const all = packCur.items || [];
+    const q = packFind.trim().toLowerCase();
+    const list = q
+      ? all.filter(
+          (it) =>
+            itemLabel(it).toLowerCase().includes(q) ||
+            String(it.hint || '').toLowerCase().includes(q)
+        )
+      : all;
+
+    $('packCount').textContent = q ? `找到 ${list.length} / ${all.length} 条` : `共 ${all.length} 条`;
+
+    if (!list.length) {
+      const e = document.createElement('div');
+      e.className = 'pm-empty';
+      e.innerHTML = all.length
+        ? '这个词库里没有匹配的词'
+        : '<b>这个词库还是空的</b><br>在上面填一条加进来';
+      box.appendChild(e);
+      return;
+    }
+
+    for (const it of list) {
+      const row = document.createElement('div');
+      row.className = 'pwrow';
+
+      const w = document.createElement('span');
+      w.className = 'w';
+      w.textContent = itemLabel(it);
+      row.appendChild(w);
+
+      const h = document.createElement('span');
+      h.className = 'h';
+      h.textContent = it.hint || '';
+      row.appendChild(h);
+
+      if (it.own) {
+        const t = document.createElement('span');
+        t.className = 'tag';
+        t.textContent = '我加的';
+        row.appendChild(t);
+      }
+
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '×';
+      del.title = '从这个词库里移掉';
+      del.onclick = () => doRemoveItem(itemKey(it), row);
+      row.appendChild(del);
+
+      box.appendChild(row);
+    }
+  }
+
+  $('btnPacks').onclick = packOpen;
+  $('packClose').onclick = packCloseIt;
+  $('packMask').onclick = (e) => {
+    if (e.target === $('packMask')) packCloseIt();
+  };
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('packMask').classList.contains('on')) packCloseIt();
+  });
+
+  $('packFind').oninput = (e) => {
+    packFind = e.target.value;
+    renderPackWords();
+  };
+
+  $('packNewBtn').onclick = async () => {
+    const name = $('packNewName').value.trim();
+    if (!name) return toast('给词库起个名字');
+    const r = await send({ cmd: 'pack/create', name, type: $('packNewType').value });
+    if (!r || r.error) return;
+    $('packNewName').value = '';
+    await loadPackList(r.id);
+    toast(`建好了「${name}」，下面可以开始加词`);
+  };
+  $('packNewName').onkeydown = (e) => {
+    if (e.key === 'Enter') $('packNewBtn').click();
+  };
+
+  $('packReset').onclick = async () => {
+    if (!packCur) return;
+    const msg = packCur.custom
+      ? `清空「${packCur.name}」里的所有词？词库本身会留着。`
+      : `把「${packCur.name}」恢复成出厂的词？你加的和删的都会还原。`;
+    if (!confirm(msg)) return;
+    const r = await send({ cmd: 'pack/reset', id: packCur.id });
+    if (!r || r.error) return;
+    await loadPackList(packCur.id);
+    toast('已恢复');
+  };
+
+  $('packDel').onclick = async () => {
+    if (!packCur) return;
+    if (!packCur.custom) return toast('内置词库不能删，只能「恢复默认」');
+    if (!confirm(`删掉词库「${packCur.name}」和里面的 ${packCur.total} 条词？删了就没了。`)) return;
+    const r = await send({ cmd: 'pack/remove', id: packCur.id });
+    if (!r || r.error) return;
+    packCur = null;
+    await loadPackList();
+    toast('词库删掉了');
+  };
+
+  $('plActions').onclick = (e) => {
+    const k = e.target.dataset.pl;
+    if (!k || !selectedId) return;
+    if (k === 'A' || k === 'B') send({ cmd: 'player/team', id: selectedId, team: k });
+    else if (k === '-') send({ cmd: 'player/team', id: selectedId, team: null });
+    else if (k === '+1') send({ cmd: 'player/score', id: selectedId, delta: 1 });
+    else if (k === '-1') send({ cmd: 'player/score', id: selectedId, delta: -1 });
+    else if (k === 'kick') {
+      if (confirm('把这个人移出房间？')) send({ cmd: 'player/kick', id: selectedId });
+    }
+  };
+
+  // 耳机里放一段（跨游戏，不依附任何游戏面板）
+  $('ebPlay').onclick = () => {
+    if (!selectedId) return toast('先在左栏点一个人');
+    const sound = $('ebSel').value;
+    if (!sound) return toast('库里还没有音频 —— 到右边「音频库」传一个');
+    send({ cmd: 'sfx/poke', id: selectedId, sound });
+  };
+  $('ebStop').onclick = () => send({ cmd: 'sfx/pokeStop' });
+
+  // 队伍加减分
+  $('players').addEventListener('click', (e) => {
+    const btn = e.target.closest('.tbtn');
+    if (!btn) return;
+    e.stopPropagation();
+    send({ cmd: 'team/score', team: btn.dataset.tm, delta: Number(btn.dataset.d) });
+  });
+
+  /* ------------------------------------------------ SSE */
+
+  NET.stream('host', '', (m) => {
+    if (m.t === 'sync') {
+      snap = m;
+      // 皮肤只改 body 上的一个属性，三端共用同一份 CSS 变量
+      if (m.theme) document.body.dataset.theme = m.theme;
+      renderGames(m.games, m.gameId);
+      renderPlayers(m.players, m.teams);
+      paintEar();
+      renderPanel(m.panel);
+      renderCue(m);
+      paintVoteHost(m.vote);
+      renderJudge(m);
+      $('fxClearBtn').style.display = m.fxNow ? '' : 'none';
+      $('startBar').style.display = m.canStart ? '' : 'none';
+      if (m.canStart) $('startGameBtn').textContent = `开始：${m.startName || ''}`;
+      renderPacksMini(m);
+      if ($('pcMask').classList.contains('on')) renderPcList();
+      $('punishModeBtn').textContent = m.punishMode === 'bar' ? '酒桌' : '清爽';
+      $('punishModeBtn').classList.toggle('bar', m.punishMode === 'bar');
+      renderLivebar(m);
+      renderLog(m.log);
+      renderTracks(m.media, m.track);
+      paintVoice(m);
+      // 按钮写「点了会变成什么」，不写当前是什么 ——
+      // 顶栏其它按钮都是动作（预览 / 打开投屏 / 整场重置），这里跟着来。
+      $('themeBtn').textContent = m.theme === 'festive' ? '切回日常' : '切到过年';
+      $('modeBtn').textContent = m.mode === 'match' ? '切到综艺' : '切到比赛';
+      // 弹层开着就跟着刷，别让「下一项」点完还显示旧节目
+      if ($('showMask').classList.contains('on')) renderShow(m);
+      timerState = m.timer;
+      if (!selectedId || !m.players.some((p) => p.id === selectedId)) {
+        selectedId = null;
+        paintPlActions();
+      }
+      if (m.audio && m.audio.phase === 'playing' && pa.ready && !pa.playing) {
+        const from = m.audio.startAt ? Date.now() - m.audio.startAt : 0;
+        playLocal(m.track, from, m.audio.bpm);
+      }
+    } else if (m.t === 'audio') {
+      handleAudio(m);
+    } else if (m.t === 'say') {
+      voice.say(m.text);
+    } else if (m.t === 'fx') {
+      // 投屏负责画面，声音只从这台电脑出（投屏永不发声）
+      const SOUND = { deal: 'ding', dead: 'boom', reveal: 'win', countdown: 'tick' };
+      if (SOUND[m.name]) sfx.play(SOUND[m.name]);
+      if (m.name === 'countdown') {
+        setTimeout(() => sfx.play('tick'), 900);
+        setTimeout(() => sfx.play('tick'), 1800);
+      }
+      if (m.arg) toast(m.arg);
+    }
+  }, (up) => {
+    if (!up) toast('与服务的连接断了');
+  });
+
+  function playLocal(track, fromMs, bpm) {
+    if (!pa.ready) return;
+    if (track && track.kind === 'file') pa.playFile('/media/' + encodeURIComponent(track.id), fromMs);
+    else pa.startSynth(bpm || 122, fromMs);
+    $('btnPlay').classList.add('playing');
+  }
+
+  function handleAudio(m) {
+    if (m.op === 'play') {
+      if (!pa.ready) {
+        toast('先点右上角「启用声音」');
+        return;
+      }
+      $('bpm').value = m.bpm || 122;
+      $('bpmVal').textContent = m.bpm || 122;
+      playLocal(m.track, m.fromMs || 0, m.bpm);
+    } else if (m.op === 'pause') {
+      pa.stopAll();
+      $('btnPlay').classList.remove('playing');
+    } else if (m.op === 'stop') {
+      pa.stopAll();
+      $('btnPlay').classList.remove('playing');
+    } else if (m.op === 'bpm') {
+      if (pa.playing) pa.startSynth(m.bpm, 0);
+      $('bpm').value = m.bpm;
+      $('bpmVal').textContent = m.bpm;
+    }
+  }
+
+  initNet();
+})();
+</script>
+</body>
+</html>

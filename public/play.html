@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#08090d" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>聚会游戏机</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="/assets/css/base.css" />
+<link rel="stylesheet" href="/assets/css/play.css" />
+</head>
+<body class="play">
+
+<div id="gate">
+  <div class="gate-mark">PARTY BOX</div>
+  <h1 class="gate-title" id="gateTitle">进入游戏</h1>
+  <div class="gate-sub" id="gateSub">戴上耳机，输一个名字<br />屏幕上会出现只有你能看的东西</div>
+
+  <div id="gateForm">
+    <input id="nick" class="input" maxlength="14" placeholder="你的名字" autocomplete="off" />
+    <label class="checkline">
+      <input type="checkbox" id="headset" />
+      <span>我已经戴上耳机了。<br />这一局会有人给你单独放东西，外放就穿帮了。</span>
+    </label>
+    <button id="enter" class="btn primary wide" style="padding:16px;font-size:17px">进入</button>
+  </div>
+
+  <button id="resume" class="btn primary wide" style="display:none;padding:16px;font-size:17px">继续</button>
+
+  <div class="gate-note" id="gateNote">
+    点击进入即表示你同意：本局的声音由系统统一控制，<br />
+    中途出现奇怪的声音、突然安静、别人听得到而你听不到，都属正常。
+  </div>
+</div>
+
+<div id="stage">
+  <div class="topbar">
+    <span class="who" id="sname">—</span>
+    <span class="chip" id="steam" style="display:none">—</span>
+    <span class="spacer"></span>
+    <span class="chip" id="sround" style="display:none">—</span>
+    <button class="awake" id="awake" type="button"><i></i><span id="awakeText">常亮</span></button>
+  </div>
+  <div class="tbar" id="tbar" style="display:none"><i></i></div>
+  <main id="main"></main>
+</div>
+
+<div class="musicbar" id="musicbar">
+  <div class="mrow">
+    <span class="mnote">♫</span>
+    <span class="mtime" id="mcur">0:00</span>
+    <div class="mtrack"><i id="mfill"></i></div>
+    <span class="mtime" id="mtotal">0:00</span>
+  </div>
+  <div class="mrow">
+    <span class="mhint" id="mhint">音量由主持人控制</span>
+    <span class="spacer"></span>
+    <span class="mpct" id="mpct">70%</span>
+  </div>
+</div>
+
+<div class="offline" id="offline">连接中断，正在重连…</div>
+<div class="toast" id="toast"></div>
+
+<script src="/assets/js/net.js"></script>
+<script src="/assets/js/view.js"></script>
+<script src="/assets/js/sfx.js"></script>
+<script src="/assets/js/wake.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  if (location.protocol === 'file:') {
+    document.body.innerHTML =
+      '<div style="padding:40px;font:15px/1.9 system-ui;color:#e8eaf2">' +
+      '<h2>这不是玩家入口</h2><p style="color:#8b90a6">先在主持人的电脑上启动 server.js，' +
+      '再扫主持台的二维码。</p></div>';
+    return;
+  }
+
+  const sfx = new Sfx();
+  const keeper = new WakeKeeper();
+  let pid = localStorage.getItem('pb_pid') || '';
+  let myName = localStorage.getItem('pb_name') || '';
+  let timerState = null;
+  let lastTone = '';
+  let joined = false;
+
+  const toastEl = $('toast');
+  let toastTimer = null;
+  window.toast = function (text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('on'), 2200);
+  };
+
+  /* ---------------------------------------------------- 刷新恢复 */
+
+  if (pid && myName) {
+    $('gateTitle').textContent = '欢迎回来';
+    $('gateSub').innerHTML = '你还在这一局里<br>点一下继续，屏幕会接上';
+    $('gateForm').style.display = 'none';
+    $('resume').style.display = 'block';
+    $('resume').textContent = '继续 · ' + myName;
+    $('gateNote').innerHTML = '刷新不会丢位置。如果一直连不上，<br>说明主持台重启过，重新输名字就行。';
+    $('nick').value = myName;
+  } else {
+    $('nick').value = myName;
+  }
+
+  /* ------------------------------------------- 耳机音乐条（舞蹈狼人杀） */
+
+  // 音量由主持台统一控制，这里只显示，不给调 ——
+  // 能自己静音的话，谁都可以装听不见。
+  let mvol = 70;
+
+  function musicPaint() {
+    $('mpct').textContent = mvol + '%';
+  }
+  musicPaint();
+
+  function musicShow(on) {
+    $('musicbar').classList.toggle('on', !!on);
+  }
+
+  function musicApply(v) {
+    const n = Number(v);
+    if (isFinite(n) && n >= 0) mvol = Math.max(0, Math.min(100, Math.round(n)));
+    sfx.setMusicVolume(mvol / 100);
+    musicPaint();
+  }
+
+  /* 服务端只报「从哪一刻开始、从曲目第几秒开始放」，剩下本地算。
+     所有人落在同一格十六分音符上 —— 中途拖进度条、刷新页面都接得上。
+     狼王那台拿到的 offset 一模一样，只是 on=false，不出声而已。 */
+  function beatPlan(b) {
+    const bpm = Math.max(70, Math.min(180, (b && b.bpm) || 118));
+    const spb = 60 / bpm / 4; // 一个十六分音符多长
+    const now = NET.serverNow();
+    const startAt = Number(b && b.startAt) || now;
+    const offset = Math.max(0, Number(b && b.offset) || 0);
+    const elapsed = (now - startAt) / 1000;
+
+    if (elapsed < 0) {
+      // 还没到起点，先等着；第一格就是 offset 那一格
+      return { bpm, wait: -elapsed + 0.06, offset };
+    }
+    // 已经在放了：此刻应处在曲目的第几秒，对齐到下一格
+    const pos = offset + elapsed;
+    const grid = Math.ceil(pos / spb);
+    return { bpm, wait: grid * spb - pos + 0.03, offset: grid * spb };
+  }
+
+  let musicState = null; // { startAt, offset, duration }
+  let musicSig = '';
+
+  function musicSync(b) {
+    const on = !!(b && b.on);
+    musicShow(!b || b.show === true || on);
+    if (b && b.vol !== undefined) musicApply(b.vol);
+
+    if (b && (b.offset !== undefined || b.duration !== undefined)) {
+      musicState = {
+        startAt: Number(b.startAt) || NET.serverNow(),
+        offset: Math.max(0, Number(b.offset) || 0),
+        duration: Math.max(0, Number(b.duration) || 0),
+      };
+      musicTick();
+    } else {
+      musicState = null;
+    }
+
+    if (!on) {
+      sfx.stopMusic();
+      musicSig = '';
+      return;
+    }
+
+    // 开始时刻 / 位置 / 曲目变了才重起 —— 普通的状态推送别把音乐打断
+    const src = (b.track && b.track.src) || '';
+    const sig = `${b.startAt || 0}|${b.bpm || 0}|${b.offset || 0}|${src}`;
+    if (sig === musicSig) return;
+    musicSig = sig;
+    if (src) {
+      // 曲库里的歌：本地放自己那份，同样按开始时刻对齐
+      const now = NET.serverNow();
+      const wait = Math.max(0, (Number(b.startAt) || now) - now) / 1000 + 0.02;
+      sfx.startMusicFile(src, wait, Math.max(0, Number(b.offset) || 0), b.bpm || 118);
+      $('mhint').textContent = (b.track && b.track.name) || '曲库歌曲';
+    } else {
+      const plan = beatPlan(b);
+      sfx.startMusic(plan.bpm, plan.wait, plan.offset);
+      $('mhint').textContent = '音量由主持人控制';
+    }
+  }
+
+  function clock(sec) {
+    const x = Math.max(0, Math.round(Number(sec) || 0));
+    return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`;
+  }
+
+  function musicTick() {
+    if (!musicState) return;
+    const d = musicState.duration || 0;
+    const raw = musicState.offset + Math.max(0, (NET.serverNow() - musicState.startAt) / 1000);
+    const pos = Math.max(0, Math.min(d, raw));
+    $('mfill').style.width = (d > 0 ? (pos / d) * 100 : 0).toFixed(2) + '%';
+    $('mcur').textContent = clock(pos);
+    $('mtotal').textContent = clock(d);
+  }
+  setInterval(musicTick, 200);
+
+  musicApply(70);
+
+  /* ---------------------------------------------------- 计时条 */
+
+  function paintTimer() {
+    const bar = $('tbar');
+    if (!timerState || !timerState.endsAt) {
+      bar.style.display = 'none';
+      return;
+    }
+    const left = timerState.endsAt - NET.serverNow();
+    const total = Math.max(1, (timerState.total || 0) * 1000);
+    const pct = Math.max(0, Math.min(1, left / total));
+    bar.style.display = 'block';
+    bar.className = 'tbar' + (pct < 0.2 ? ' hot' : pct < 0.5 ? ' warn' : '');
+    bar.firstElementChild.style.width = (pct * 100).toFixed(1) + '%';
+  }
+  setInterval(paintTimer, 120);
+
+  /* ---------------------------------------------------- 屏幕常亮 */
+
+  const awakeEl = $('awake');
+  const awakeText = $('awakeText');
+  let reportedAwake = null;
+
+  function reportAwake(on) {
+    if (!pid || reportedAwake === on) return;
+    reportedAwake = on;
+    NET.post('/api/awake', { id: pid, awake: on }).catch(() => {});
+  }
+
+  keeper.onChange((s) => {
+    const on = !!s.wanted && s.active;
+    awakeEl.classList.toggle('on', on);
+    awakeEl.classList.toggle('need', !!s.wanted && !on);
+    awakeText.textContent = !s.wanted ? '常亮已关' : on ? '常亮中' : '点我常亮';
+    if (joined) reportAwake(on);
+  });
+  awakeEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    keeper.toggle();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      if (joined && keeper.wanted) keeper.start();
+      if (sfx.ctx && sfx.ctx.state === 'suspended') sfx.ctx.resume().catch(() => {});
+    } else if (joined) {
+      reportAwake(false);
+    }
+  });
+
+  /* ---------------------------------------------------- 进入 */
+
+  async function boot(forceResume) {
+    keeper.start();
+    await sfx.init();
+    sfx.prime();
+
+    if (forceResume) {
+      const d = await NET.post('/api/reconnect', { id: pid }).catch(() => null);
+      if (!d || d.error) {
+        localStorage.removeItem('pb_pid');
+        pid = '';
+        location.reload();
+        return;
+      }
+      myName = d.name;
+    }
+
+    NET.pid = pid;
+    joined = true;
+    $('sname').textContent = myName;
+    $('gate').classList.add('hide');
+    $('stage').classList.add('on');
+
+    NET.syncClock().catch(() => {});
+    connect();
+  }
+
+  $('enter').onclick = async () => {
+    const name = $('nick').value.trim();
+    if (!name) {
+      $('nick').focus();
+      return;
+    }
+    if (!$('headset').checked) {
+      toast('先勾一下「已戴耳机」');
+      return;
+    }
+    $('enter').disabled = true;
+    $('enter').textContent = '正在进入…';
+
+    // 必须同步拿到手势：await 之后 iOS 就不认了
+    keeper.start();
+    sfx.init();
+    sfx.prime();
+
+    const d = await NET.post('/api/join', { name, headset: true }).catch(() => null);
+    if (!d || d.error) {
+      $('enter').disabled = false;
+      $('enter').textContent = '连不上，再试一次';
+      return;
+    }
+    pid = d.id;
+    myName = d.name;
+    localStorage.setItem('pb_pid', pid);
+    localStorage.setItem('pb_name', myName);
+    await boot(false);
+  };
+
+  $('resume').onclick = async () => {
+    $('resume').disabled = true;
+    keeper.start();
+    sfx.init();
+    sfx.prime();
+    await boot(true);
+  };
+
+  /* ---------------------------------------------------- SSE */
+
+  let linkUp = true;
+  function connect() {
+    linkUp = true;
+    NET.stream('play', pid, onEvent, (up) => {
+      $('offline').classList.toggle('on', !up);
+      // 一断线就先把本地正在响的音效掐掉：服务端已经联系不上了，
+      // 没人能再给它发「停」，耳返里的东西会一直响到电池没电。
+      // 舞曲不动 —— 重连后视图里带 beat 会自动接上，硬停反而容易断在半拍上。
+      if (!up && linkUp && sfx) sfx.stopFx();
+      linkUp = up;
+    });
+  }
+
+  function onEvent(m) {
+    switch (m.t) {
+      case 'hello':
+        myName = m.me.name;
+        $('sname').textContent = myName;
+        if (m.me.team) {
+          $('steam').style.display = '';
+          $('steam').textContent = m.me.team + ' 队';
+          $('steam').className = 'chip ' + m.me.team;
+        } else {
+          $('steam').style.display = 'none';
+        }
+        if (m.round) {
+          $('sround').style.display = '';
+          $('sround').textContent = '第 ' + m.round + ' 轮';
+        }
+        break;
+      case 'view':
+        timerState = m.timer || null;
+        if (m.theme) document.body.dataset.theme = m.theme;
+        /* P3 微交互：从「等着」变成「轮到你」的那一刻震一下。
+           iOS Safari 上 vibrate 是空实现，所以视觉提示必须独立成立 ——
+           下面那行 lead 就是视觉那一半，不能只靠震动。 */
+        if (m.view && m.view.tone === 'active' && lastTone !== 'active') {
+          if (navigator.vibrate) navigator.vibrate(200);
+        }
+        lastTone = m.view ? m.view.tone || '' : '';
+        if (m.round) {
+          $('sround').style.display = '';
+          $('sround').textContent = '第 ' + m.round + ' 轮';
+        }
+        View.render($('main'), m.view, {
+          onAction: (action, payload) => {
+            /* 下注和表情不是游戏动作：走各自的接口，
+             * 塞进 /api/game 会被当前游戏的 actions 表挡掉。 */
+            if (action === '_bet') {
+              NET.post('/api/bet', { id: pid, targetId: payload.targetId }).then((r) => {
+                if (r && r.error) toast(r.error);
+              });
+              return;
+            }
+            if (action === '_mood') {
+              NET.post('/api/mood', { id: pid, emoji: payload.emoji }).then((r) => {
+                if (r && r.error) toast(r.error);
+              });
+              return;
+            }
+            NET.post('/api/game', Object.assign({ id: pid, action }, payload)).then((r) => {
+              if (!r) return;
+              if (r.error) return toast(r.error);
+              // 抢答：抢跑不再罚分，只提示一句
+              if (r.reason === 'too_early') toast('还没到，手别抖');
+              else if (r.reason === 'taken') toast('有人比你先按');
+              else if (r.reason === 'blocked') toast('这题你没份了');
+              else if (r.correct === false) toast('不对，再想想');
+            });
+          },
+        });
+        // 舞蹈狼人杀：刷新页面后靠这一句把音乐接回来
+        if (m.view && m.view.beat !== undefined) musicSync(m.view.beat);
+        paintTimer();
+        break;
+      case 'timer':
+        timerState = m;
+        paintTimer();
+        break;
+      case 'toast':
+        toast(m.text);
+        break;
+      case 'sfx':
+        sfx.play(m.name);
+        // 主持台随手放的私密音效会带 duck：把舞曲压低，别两条音轨打架
+        if (m.duck) sfx.duck(13000);
+        if (m.name === 'wolf') sfx.vibrate([40, 60, 40, 60, 120]);
+        else if (m.name === 'ding') sfx.vibrate(20);
+        break;
+      // 主持人按了「停」：耳机里正在响的一切，立刻哑
+      case 'sfx_stop':
+        sfx.stopFx();
+        sfx.unduck();
+        break;
+      case 'beat':
+        if (m.preload) {
+          if (m.track && m.track.src) sfx.preloadFile(m.track.src);
+          break;
+        }
+        musicSync(m);
+        break;
+      case 'kicked':
+        localStorage.removeItem('pb_pid');
+        pid = '';
+        joined = false;
+        if (NET.es) NET.es.close();
+        sfx.play('buzzErr');
+        sfx.stopMusic();
+        musicShow(false);
+        $('stage').classList.remove('on');
+        $('gate').classList.remove('hide');
+        $('gateTitle').textContent = m.reason === 'byHost' ? '你被移出了' : '主持台重置了';
+        $('gateSub').innerHTML = m.reason === 'byHost' ? '这一局不能再进' : '重新输一次名字就能回去';
+        $('gateForm').style.display = m.reason === 'byHost' ? 'none' : '';
+        $('resume').style.display = 'none';
+        $('enter').disabled = false;
+        $('enter').textContent = '进入';
+        break;
+    }
+  }
+})();
+</script>
+</body>
+</html>
