@@ -8,6 +8,10 @@
 
 - CHANGELOG 自动生成（按提交前缀分类）与 pre-push 钩子（`9d9c9ba`）
 
+### 修复
+
+- changelog 在 Windows 换行下误报不一致（`f87f5bb`）
+
 ### 文档
 
 - README 补充 CHANGELOG 维护约定（`3c30221`）
