@@ -1,0 +1,16 @@
+#!/bin/sh
+# push 前把 [Unreleased] 按提交记录补齐；如果有变化就拦下，让你先提交。
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+node tools/dev/changelog.js || exit 1
+
+if ! git diff --quiet -- CHANGELOG.md; then
+  echo ""
+  echo "  CHANGELOG 的 [Unreleased] 已按提交记录更新，但还没提交。"
+  echo "  先提交，再 push："
+  echo "    git add CHANGELOG.md && git commit -m \"docs: 更新 CHANGELOG\""
+  echo ""
+  git --no-pager diff --stat -- CHANGELOG.md || true
+  exit 1
+fi

@@ -2,6 +2,16 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [Unreleased]
+
+### 文档
+
+- README 增加英文摘要，新增 CHANGELOG（1.0.0）（`66fbaed`）
+
+### 手动补充
+
+（这里写给「新增/修复」表达不了的事，脚本不会覆盖）
+
 ## [1.0.0] — 2026-11-24
 
 首次公开发布。仓库：<https://github.com/2896523951-web/partybox>

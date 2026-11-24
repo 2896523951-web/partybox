@@ -6,7 +6,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node tools/check/check.js"
+    "check": "node tools/check/check.js",
+    "changelog": "node tools/dev/changelog.js",
+    "changelog:check": "node tools/dev/changelog.js --check",
+    "hooks:install": "node tools/dev/install-hooks.js"
   },
   "engines": {
     "node": ">=18"
