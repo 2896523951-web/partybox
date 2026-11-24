@@ -40,6 +40,10 @@ const GROUPS = [
 ];
 const OTHER = '其他';
 
+/* Windows 上 git 会把 LF 转成 CRLF，逐字符比较会误报「不一致」。
+ * 比较和写入判断都先归一化，避免 check 永远失败。 */
+const norm = (s) => String(s).replace(/\r\n/g, '\n');
+
 function git(args) {
   return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
 }
@@ -160,14 +164,14 @@ function main() {
     return;
   }
   if (check) {
-    if (next !== text) {
+    if (norm(next) !== norm(text)) {
       console.error('CHANGELOG.md 的 [Unreleased] 和提交记录不一致，先跑：node tools/dev/changelog.js');
       process.exit(1);
     }
     console.log('CHANGELOG 的 [Unreleased] 是最新的');
     return;
   }
-  if (next === text) {
+  if (norm(next) === norm(text)) {
     console.log('CHANGELOG 无变化');
     return;
   }
